@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.3-cli
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -11,16 +11,19 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Copy all files
-COPY . .
+# Copy composer files
+COPY composer.json ./
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install PHP dependencies (fresh install, no lock file)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+# Copy all other files
+COPY . .
 
 # Set permissions
 RUN chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-# Create storage directories if they don't exist
+# Create storage directories
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs
 
 EXPOSE 8080
