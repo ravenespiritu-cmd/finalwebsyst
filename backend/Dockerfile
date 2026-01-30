@@ -11,19 +11,20 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Copy composer files
+# Copy composer.json only (NOT composer.lock)
 COPY composer.json ./
 
-# Install PHP dependencies (fresh install, no lock file)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+# Install dependencies fresh (creates new lock file compatible with PHP 8.3)
+RUN composer update --no-dev --optimize-autoloader --no-interaction
 
-# Copy all other files
+# Copy rest of the application
 COPY . .
+
+# Remove old composer.lock if it exists and regenerate autoloader
+RUN rm -f composer.lock && composer dump-autoload --optimize
 
 # Set permissions
 RUN chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-
-# Create storage directories
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs
 
 EXPOSE 8080
