@@ -14,11 +14,17 @@ WORKDIR /app
 # Copy ALL application files first
 COPY . .
 
+# Debug: List files to verify artisan exists
+RUN ls -la && ls -la artisan || echo "artisan not found"
+
 # Remove any existing composer.lock to avoid version conflicts
 RUN rm -f composer.lock
 
-# Install dependencies (generates fresh lock file for PHP 8.3)
-RUN composer update --no-dev --optimize-autoloader --no-interaction
+# Install dependencies WITHOUT running scripts (to avoid artisan issues)
+RUN composer update --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Now run the post-install scripts manually (artisan file exists now)
+RUN composer run-script post-autoload-dump || true
 
 # Set permissions
 RUN chmod -R 775 storage bootstrap/cache 2>/dev/null || true
