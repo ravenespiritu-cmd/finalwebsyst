@@ -76,14 +76,10 @@ class UploadController extends Controller
         $apiSecret = config('cloudinary.api_secret') ?: getenv('CLOUDINARY_API_SECRET');
         
         $timestamp = time();
-        $params = [
-            'folder' => 'gandahub/' . $folder,
-            'timestamp' => $timestamp,
-        ];
+        $uploadFolder = 'gandahub/' . $folder;
         
-        // Generate signature
-        ksort($params);
-        $signatureString = http_build_query($params) . $apiSecret;
+        // Generate signature - Cloudinary format: folder=x&timestamp=y + secret
+        $signatureString = "folder={$uploadFolder}&timestamp={$timestamp}{$apiSecret}";
         $signature = sha1($signatureString);
         
         $response = Http::attach(
@@ -92,7 +88,7 @@ class UploadController extends Controller
             'api_key' => $apiKey,
             'timestamp' => $timestamp,
             'signature' => $signature,
-            'folder' => 'gandahub/' . $folder,
+            'folder' => $uploadFolder,
         ]);
         
         if ($response->successful()) {
@@ -100,9 +96,15 @@ class UploadController extends Controller
             return [
                 'url' => $data['secure_url'],
                 'path' => $data['public_id'],
-                'filename' => $data['original_filename'] . '.' . $data['format'],
+                'filename' => ($data['original_filename'] ?? 'image') . '.' . ($data['format'] ?? 'png'),
             ];
         }
+        
+        // Log the error for debugging
+        \Log::error('Cloudinary upload failed', [
+            'response' => $response->body(),
+            'status' => $response->status(),
+        ]);
         
         throw new \Exception('Cloudinary upload failed: ' . $response->body());
     }
