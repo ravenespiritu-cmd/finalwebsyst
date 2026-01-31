@@ -52,7 +52,7 @@ class DeliveryController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        $delivery = Delivery::with(['order.items', 'order.user', 'rider'])->find($id);
+        $delivery = Delivery::with(['order.items', 'order.user', 'order.payment', 'rider'])->find($id);
 
         if (!$delivery) {
             return $this->errorResponse('Delivery not found', 404);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FaEye, FaSearch, FaTruck, FaUserPlus } from 'react-icons/fa';
-import { deliveriesAPI } from '../../services/api';
+import { FaEye, FaUserPlus, FaMoneyBillWave } from 'react-icons/fa';
+import { deliveriesAPI, paymentsAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -119,6 +119,32 @@ const Deliveries = () => {
       returned: 'danger',
     };
     return <Badge variant={variants[status] || 'default'}>{status?.replace('_', ' ')}</Badge>;
+  };
+
+  const getPaymentStatusBadge = (status) => {
+    const variants = {
+      pending: 'warning',
+      processing: 'warning',
+      completed: 'success',
+      failed: 'danger',
+      refunded: 'info',
+      cancelled: 'default',
+    };
+    return <Badge variant={variants[status] || 'default'}>{status?.replace('_', ' ')}</Badge>;
+  };
+
+  const markPaymentComplete = async (paymentId) => {
+    try {
+      await paymentsAPI.updateStatus(paymentId, { status: 'completed' });
+      toast.success('Payment marked as completed');
+      if (selectedDelivery?.order?.id) {
+        const response = await deliveriesAPI.getOne(selectedDelivery.id);
+        setSelectedDelivery(response.data.data);
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to update payment';
+      toast.error(message);
+    }
   };
 
   const statuses = ['pending', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'returned'];
@@ -256,6 +282,40 @@ const Deliveries = () => {
                   <p className="text-gray-500">No rider assigned</p>
                 )}
               </div>
+            </div>
+
+            {/* Payment Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
+                <FaMoneyBillWave className="text-primary-600" />
+                Payment
+              </h4>
+              {selectedDelivery.order?.payment ? (
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      Method: <span className="font-medium capitalize">{selectedDelivery.order.payment.payment_method?.replace('_', ' ')}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Amount: <span className="font-medium">₱{Number(selectedDelivery.order.payment.amount).toLocaleString()}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getPaymentStatusBadge(selectedDelivery.order.payment.status)}
+                    {selectedDelivery.status === 'delivered' &&
+                      !['completed', 'refunded', 'cancelled'].includes(selectedDelivery.order.payment.status) && (
+                        <button
+                          onClick={() => markPaymentComplete(selectedDelivery.order.payment.id)}
+                          className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          Mark Paid
+                        </button>
+                      )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500">No payment record</p>
+              )}
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">

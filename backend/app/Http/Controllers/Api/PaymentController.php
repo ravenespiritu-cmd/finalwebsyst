@@ -85,17 +85,32 @@ class PaymentController extends Controller
             return $this->errorResponse('Payment already completed', 400);
         }
 
-        // Mock payment processing based on method
+        // Mock payment processing - real-world requirements per payment method
         $validator = Validator::make($request->all(), [
-            'card_number' => 'required_if:payment_method,credit_card|string',
-            'card_expiry' => 'required_if:payment_method,credit_card|string',
-            'card_cvv' => 'required_if:payment_method,credit_card|string',
-            'gcash_number' => 'required_if:payment_method,gcash|string',
-            'maya_number' => 'required_if:payment_method,maya|string',
+            // Credit Card: card number, cardholder name, expiry, CVV (as required by merchants)
+            'card_number' => 'required_if:payment_method,credit_card|string|regex:/^\d{13,19}$/',
+            'cardholder_name' => 'required_if:payment_method,credit_card|string|min:2',
+            'card_expiry' => 'required_if:payment_method,credit_card|string|regex:/^(0[1-9]|1[0-2])\/\d{2}$/',
+            'card_cvv' => 'required_if:payment_method,credit_card|string|regex:/^\d{3,4}$/',
+            // GCash: registered mobile number + name for verification (as required for Send Money/Request)
+            'gcash_number' => 'required_if:payment_method,gcash|string|regex:/^09\d{9}$/',
+            'gcash_name' => 'required_if:payment_method,gcash|string|min:2',
+            // Maya: registered mobile number + name for verification (as required for Maya Wallet)
+            'maya_number' => 'required_if:payment_method,maya|string|regex:/^09\d{9}$/',
+            'maya_name' => 'required_if:payment_method,maya|string|min:2',
         ]);
 
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', 422, $validator->errors());
+        }
+
+        // Validate card expiry is not in the past
+        if ($request->payment_method === 'credit_card' && $request->card_expiry) {
+            [$month, $year] = explode('/', $request->card_expiry);
+            $expiryDate = \Carbon\Carbon::createFromDate(2000 + (int) $year, (int) $month, 1)->endOfMonth();
+            if ($expiryDate->isPast()) {
+                return $this->errorResponse('Card has expired', 422);
+            }
         }
 
         // Simulate payment processing

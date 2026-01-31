@@ -13,6 +13,7 @@ import {
   FaTimes,
   FaSignOutAlt,
   FaWarehouse,
+  FaMoneyBillWave,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
@@ -28,6 +29,7 @@ const AdminLayout = () => {
     { name: 'Categories', path: '/admin/categories', icon: FaList },
     { name: 'Inventory', path: '/admin/inventory', icon: FaWarehouse },
     { name: 'Orders', path: '/admin/orders', icon: FaShoppingCart },
+    { name: 'Payments', path: '/admin/payments', icon: FaMoneyBillWave },
     { name: 'Customers', path: '/admin/users', icon: FaUsers },
     { name: 'Deliveries', path: '/admin/deliveries', icon: FaTruck },
     { name: 'Reports', path: '/admin/reports', icon: FaChartBar },

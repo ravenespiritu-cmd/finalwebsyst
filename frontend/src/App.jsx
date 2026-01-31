@@ -33,6 +33,7 @@ import AdminCategories from './pages/admin/Categories';
 import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 import AdminDeliveries from './pages/admin/Deliveries';
+import AdminPayments from './pages/admin/Payments';
 import AdminReports from './pages/admin/Reports';
 import AdminSettings from './pages/admin/Settings';
 import AdminInventory from './pages/admin/Inventory';
@@ -110,6 +111,7 @@ function App() {
               <Route path="orders" element={<AdminOrders />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="deliveries" element={<AdminDeliveries />} />
+              <Route path="payments" element={<AdminPayments />} />
               <Route path="inventory" element={<AdminInventory />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="settings" element={<AdminSettings />} />
