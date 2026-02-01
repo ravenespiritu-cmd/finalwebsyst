@@ -112,7 +112,7 @@ const Deliveries = () => {
       delivered: 'success',
       failed: 'danger',
     };
-    return <Badge variant={variants[status] || 'default'}>{status?.replace('_', ' ')}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
   };
 
   const quickStatuses = ['picked_up', 'in_transit', 'out_for_delivery'];
@@ -142,7 +142,7 @@ const Deliveries = () => {
                 statusFilter === status ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {status.replace('_', ' ')}
+              {status.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
