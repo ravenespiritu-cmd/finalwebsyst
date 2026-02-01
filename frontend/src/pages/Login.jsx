@@ -80,7 +80,7 @@ const Login = () => {
               label="Email Address"
               type="email"
               icon={FaEnvelope}
-              placeholder="you@example.com"
+              placeholder="cyven@example.com"
               error={errors.email?.message}
               {...register('email', {
                 required: 'Email is required',
