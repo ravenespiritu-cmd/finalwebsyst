@@ -25,11 +25,12 @@ const Deliveries = () => {
     fetchRiders();
   }, []);
 
-  const fetchDeliveries = async (page = 1) => {
+  const fetchDeliveries = async (page = 1, statusOverride) => {
     try {
       setLoading(true);
       const params = { page };
-      if (statusFilter) params.status = statusFilter;
+      const status = statusOverride !== undefined ? statusOverride : statusFilter;
+      if (status) params.status = status;
       const response = await deliveriesAPI.getAll(params);
       setDeliveries(response.data.data || []);
       setMeta(response.data.meta || { current_page: 1, last_page: 1 });
@@ -161,8 +162,9 @@ const Deliveries = () => {
           <select
             value={statusFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
-              fetchDeliveries();
+              const val = e.target.value;
+              setStatusFilter(val);
+              fetchDeliveries(1, val);
             }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
           >
