@@ -118,7 +118,7 @@ const Deliveries = () => {
       failed: 'danger',
       returned: 'danger',
     };
-    return <Badge variant={variants[status] || 'default'}>{status?.replace('_', ' ')}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
   };
 
   const getPaymentStatusBadge = (status) => {
@@ -130,7 +130,7 @@ const Deliveries = () => {
       refunded: 'info',
       cancelled: 'default',
     };
-    return <Badge variant={variants[status] || 'default'}>{status?.replace('_', ' ')}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
   };
 
   const markPaymentComplete = async (paymentId) => {
@@ -168,7 +168,7 @@ const Deliveries = () => {
           >
             <option value="">All Statuses</option>
             {statuses.map((status) => (
-              <option key={status} value={status}>{status.replace('_', ' ')}</option>
+              <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>
@@ -266,7 +266,7 @@ const Deliveries = () => {
                     className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     {statuses.map((status) => (
-                      <option key={status} value={status}>{status.replace('_', ' ')}</option>
+                      <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
                 </div>
