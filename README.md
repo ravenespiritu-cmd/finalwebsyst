@@ -52,6 +52,18 @@ A modern, full-stack e-commerce web application for cosmetics and beauty product
 - **JWT Auth** - Authentication
 - **Laravel Eloquent** - ORM
 
+## Tools & Services Used
+
+| Tool | Purpose |
+|------|---------|
+| **Railway** | Backend API hosting & deployment |
+| **Cloudinary** | Product image storage, transformation & CDN |
+| **Laravel Socialite** | OAuth package for "Continue with Google" login |
+| **Google Cloud Console** | OAuth 2.0 credentials (Client ID & Secret) for Google sign-in |
+| **Laravel Herd** | Local development environment (PHP, Nginx, MySQL) |
+| **XAMPP** | Alternative local server stack (Apache, MySQL, PHP) |
+| **Navicat** | Database GUI for MySQL management (optional) |
+
 ## Project Structure
 
 ```
