@@ -25,6 +25,8 @@ const Login = () => {
     if (error) {
       if (error === 'google_denied') {
         toast.error('Google sign-in was cancelled or failed.');
+      } else if (error === 'google_not_configured') {
+        toast.error('Google sign-in is not configured. Please use email and password.');
       } else if (error === 'account_deactivated') {
         toast.error('Your account has been deactivated.');
       } else {

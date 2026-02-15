@@ -178,6 +178,12 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
+        $clientId = config('services.google.client_id');
+        if (empty($clientId)) {
+            $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+            return redirect("{$frontendUrl}/login?error=google_not_configured");
+        }
+
         $redirectUrl = config('services.google.redirect');
         if (empty($redirectUrl)) {
             $redirectUrl = url('/api/v1/auth/google/callback');
