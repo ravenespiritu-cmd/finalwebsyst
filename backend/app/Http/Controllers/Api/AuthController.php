@@ -184,7 +184,7 @@ class AuthController extends Controller
         }
         config(['services.google.redirect' => $redirectUrl]);
 
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')->stateless()->redirect();
     }
 
     /**
@@ -193,7 +193,7 @@ class AuthController extends Controller
     public function handleGoogleCallback()
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
             $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
             return redirect("{$frontendUrl}/login?error=google_denied");
