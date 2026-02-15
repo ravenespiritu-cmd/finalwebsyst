@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from './AuthContext';
 
 const WISHLIST_STORAGE_KEY = 'gandaHubWishlist';
 
@@ -26,8 +27,23 @@ const saveWishlist = (items) => {
   localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
 };
 
+const clearWishlistStorage = () => {
+  localStorage.removeItem(WISHLIST_STORAGE_KEY);
+};
+
 export const WishlistProvider = ({ children }) => {
-  const [items, setItems] = useState(loadWishlist);
+  const { isAuthenticated } = useAuth();
+  const [items, setItems] = useState([]);
+
+  // Load wishlist only when authenticated; clear when logged out
+  useEffect(() => {
+    if (isAuthenticated) {
+      setItems(loadWishlist());
+    } else {
+      setItems([]);
+      clearWishlistStorage();
+    }
+  }, [isAuthenticated]);
 
   const persistWishlist = (newItems) => {
     setItems(newItems);
@@ -39,6 +55,10 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const addToWishlist = (product) => {
+    if (!isAuthenticated) {
+      toast.info('Please login to add items to your wishlist');
+      return;
+    }
     if (isInWishlist(product.id)) {
       toast.info('Already in your wishlist');
       return;
@@ -55,6 +75,10 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const toggleWishlist = (product) => {
+    if (!isAuthenticated) {
+      toast.info('Please login to add items to your wishlist');
+      return;
+    }
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
     } else {

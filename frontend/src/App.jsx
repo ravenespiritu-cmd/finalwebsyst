@@ -80,7 +80,11 @@ function App() {
               <Route path="products" element={<Products />} />
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="cart" element={<Cart />} />
-              <Route path="wishlist" element={<Wishlist />} />
+              <Route path="wishlist" element={
+                <PrivateRoute>
+                  <Wishlist />
+                </PrivateRoute>
+              } />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="track-order" element={<OrderTracking />} />
