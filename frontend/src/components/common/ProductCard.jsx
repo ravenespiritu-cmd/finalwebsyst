@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { FaStar, FaShoppingCart, FaHeart } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 import Button from './Button';
 
 const ProductCard = ({ product }) => {
   const { addToCart, loading } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   const {
     id,
@@ -69,13 +71,15 @@ const ProductCard = ({ product }) => {
           {/* Quick Actions */}
           <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
-              className="p-2 bg-white rounded-full shadow-md hover:bg-primary-50 hover:text-primary-600 transition-colors"
+              className={`p-2 bg-white rounded-full shadow-md hover:bg-primary-50 transition-colors ${isInWishlist(id) ? 'text-primary-600' : 'hover:text-primary-600'}`}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                toggleWishlist(product);
               }}
+              title={isInWishlist(id) ? 'Remove from wishlist' : 'Add to wishlist'}
             >
-              <FaHeart className="w-4 h-4" />
+              <FaHeart className={`w-4 h-4 ${isInWishlist(id) ? 'fill-current' : ''}`} />
             </button>
           </div>
 

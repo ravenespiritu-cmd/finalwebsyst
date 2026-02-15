@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,6 +21,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isAuthenticated, logout, isAdmin, isRider } = useAuth();
   const { itemsCount } = useCart();
+  const { itemsCount: wishlistCount } = useWishlist();
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
@@ -92,9 +94,14 @@ const Navbar = () => {
           {/* Right Icons */}
           <div className="flex items-center space-x-4">
             {/* Wishlist */}
-            <button className="p-2 text-gray-600 hover:text-primary-600 transition-colors hidden sm:block">
+            <Link to="/wishlist" className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative hidden sm:block">
               <FaHeart className="w-5 h-5" />
-            </button>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {wishlistCount > 9 ? '9+' : wishlistCount}
+                </span>
+              )}
+            </Link>
 
             {/* Cart */}
             <Link to="/cart" className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative">
@@ -205,6 +212,16 @@ const Navbar = () => {
                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </form>
+
+            {/* Mobile Wishlist */}
+            <Link
+              to="/wishlist"
+              className="flex items-center gap-2 py-2 px-4 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <FaHeart className="w-4 h-4" />
+              Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
+            </Link>
 
             {/* Mobile Nav Links */}
             <div className="space-y-2">

@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -25,6 +26,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import FAQs from './pages/FAQs';
 import ReturnsExchanges from './pages/ReturnsExchanges';
 import ShippingInfo from './pages/ShippingInfo';
+import Wishlist from './pages/Wishlist';
 
 // Customer Pages
 import Profile from './pages/Profile';
@@ -56,6 +58,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <WishlistProvider>
         <CartProvider>
           <ToastContainer
             position="top-right"
@@ -77,6 +80,7 @@ function App() {
               <Route path="products" element={<Products />} />
               <Route path="products/:slug" element={<ProductDetail />} />
               <Route path="cart" element={<Cart />} />
+              <Route path="wishlist" element={<Wishlist />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="track-order" element={<OrderTracking />} />
@@ -138,6 +142,7 @@ function App() {
             </Route>
           </Routes>
         </CartProvider>
+        </WishlistProvider>
       </AuthProvider>
     </Router>
   );

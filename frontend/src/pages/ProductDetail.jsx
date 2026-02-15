@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { FaStar, FaMinus, FaPlus, FaShoppingCart, FaHeart, FaShare } from 'react-icons/fa';
 import { productsAPI, reviewsAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import Loading from '../components/common/Loading';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
@@ -10,6 +11,7 @@ import Badge from '../components/common/Badge';
 const ProductDetail = () => {
   const { slug } = useParams();
   const { addToCart, loading: cartLoading } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -219,8 +221,14 @@ const ProductDetail = () => {
                   <FaShoppingCart />
                   {inStock ? 'Add to Cart' : 'Out of Stock'}
                 </Button>
-                <Button variant="outline" size="lg">
-                  <FaHeart />
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => toggleWishlist(product)}
+                  className={isInWishlist(product.id) ? 'text-primary-600 border-primary-500' : ''}
+                >
+                  <FaHeart className={isInWishlist(product.id) ? 'fill-current' : ''} />
+                  {isInWishlist(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
                 </Button>
                 <Button variant="outline" size="lg">
                   <FaShare />
