@@ -53,12 +53,16 @@ Without `VITE_API_URL` pointing to your Railway backend (e.g. `https://websystem
 
 ### Railway (backend)
 
-1. In your Railway project, open the backend service → **Variables**.
+1. In your Railway project, open the **backend (app) service** → **Variables**.
 2. Set:
    - **APP_URL** = your Railway public URL, e.g. `https://your-app.up.railway.app`
    - **FRONTEND_URL** = your Vercel URL, e.g. `https://websystemprojectf.vercel.app`  
      (Required for CORS and OAuth redirects.)
-3. Set your database and other Laravel env vars (e.g. `DB_*`, `APP_KEY`, `JWT_SECRET`) as needed.
+   - **APP_DEBUG** = `false` in production (so DB/stack traces are not sent to the frontend).
+3. **Database:** The app reads `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`. If you use Railway’s **MySQL** service, add its variables to this service:
+   - Either use **Variable Reference** (e.g. reference `MYSQLHOST` as `DB_HOST`, `MYSQLPORT` as `DB_PORT`, etc.), **or**
+   - Copy the MySQL service’s connection variables into this service and set **DB_HOST**, **DB_PORT**, **DB_DATABASE**, **DB_USERNAME**, **DB_PASSWORD** (the app also accepts **MYSQLHOST**, **MYSQLPORT**, **MYSQLDATABASE**, **MYSQLUSER**, **MYSQLPASSWORD** if `DB_*` are not set).
+4. Set **APP_KEY** and **JWT_SECRET** as needed.
 
 ---
 
