@@ -20,8 +20,17 @@ class ProductController extends Controller
         // Filter by active status (default to active for public)
         if ($request->has('active')) {
             $query->where('is_active', $request->boolean('active'));
-        } elseif (!auth()->check() || !auth()->user()->isAdmin()) {
-            $query->active();
+        } else {
+            $isAdmin = false;
+            try {
+                $user = auth()->user();
+                $isAdmin = $user && $user->isAdmin();
+            } catch (\Throwable $e) {
+                // Invalid/expired JWT or no token - treat as public
+            }
+            if (!$isAdmin) {
+                $query->active();
+            }
         }
 
         // Filter by category

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { FaStar, FaShoppingCart, FaHeart } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { toAbsoluteImageUrl } from '../../utils/imageUrl';
 import Button from './Button';
 
 const ProductCard = ({ product }) => {
@@ -44,7 +45,7 @@ const ProductCard = ({ product }) => {
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-gray-100">
           <img
-            src={thumbnail || '/placeholder-product.jpg'}
+            src={toAbsoluteImageUrl(thumbnail, '/placeholder-product.jpg')}
             alt={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />

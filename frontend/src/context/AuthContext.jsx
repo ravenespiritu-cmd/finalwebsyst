@@ -16,27 +16,37 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
-  // Check if user is authenticated on mount
+  // Check if user is authenticated on mount (with timeout so we never hang)
   useEffect(() => {
+    const AUTH_CHECK_TIMEOUT_MS = 8000;
+
     const initAuth = async () => {
-      const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-      
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-        
-        // Verify token is still valid
-        try {
-          const response = await authAPI.me();
+      try {
+        const savedToken = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+
+        if (savedToken && savedUser) {
+          setToken(savedToken);
+          setUser(JSON.parse(savedUser));
+
+          // Verify token is still valid, with timeout so loading never sticks
+          const mePromise = authAPI.me();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), AUTH_CHECK_TIMEOUT_MS)
+          );
+          const response = await Promise.race([mePromise, timeoutPromise]);
           setUser(response.data.data);
           localStorage.setItem('user', JSON.stringify(response.data.data));
-        } catch (error) {
-          // Token is invalid, clear everything
-          logout();
         }
+      } catch (error) {
+        // Token invalid or timeout: clear auth so user can still use the site
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initAuth();

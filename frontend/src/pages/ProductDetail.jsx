@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaStar, FaMinus, FaPlus, FaShoppingCart, FaHeart, FaShare } from 'react-icons/fa';
 import { productsAPI, reviewsAPI } from '../services/api';
+import { toAbsoluteImageUrl } from '../utils/imageUrl';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import Loading from '../components/common/Loading';
@@ -71,7 +72,10 @@ const ProductDetail = () => {
   const effectivePrice = product.sale_price || product.price;
   const isOnSale = product.sale_price && product.sale_price < product.price;
   const inStock = product.stock_quantity > 0;
-  const images = product.images || [product.thumbnail];
+  const rawImages = product.images?.length ? product.images : [product.thumbnail].filter(Boolean);
+  const images = rawImages.length
+    ? rawImages.map((img) => toAbsoluteImageUrl(img, '/placeholder-product.jpg'))
+    : ['/placeholder-product.jpg'];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -93,7 +97,7 @@ const ProductDetail = () => {
             <div>
               <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4">
                 <img
-                  src={images[selectedImage] || '/placeholder-product.jpg'}
+                  src={images[selectedImage]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -108,7 +112,7 @@ const ProductDetail = () => {
                         selectedImage === index ? 'border-primary-500' : 'border-transparent'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img src={toAbsoluteImageUrl(img)} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>

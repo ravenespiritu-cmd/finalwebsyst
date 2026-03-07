@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaArrowLeft, FaTruck, FaCheckCircle, FaTimesCircle, FaBox } from 'react-icons/fa';
 import { ordersAPI } from '../services/api';
+import { toAbsoluteImageUrl } from '../utils/imageUrl';
 import Loading from '../components/common/Loading';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -193,7 +194,7 @@ const OrderDetail = () => {
             {order.items?.map((item) => (
               <div key={item.id} className="py-4 flex gap-4">
                 <img
-                  src={item.product?.thumbnail || '/placeholder-product.jpg'}
+                  src={toAbsoluteImageUrl(item.product?.thumbnail, '/placeholder-product.jpg')}
                   alt={item.product_name}
                   className="w-20 h-20 object-cover rounded-lg"
                 />

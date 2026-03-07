@@ -25,7 +25,14 @@ class ReviewController extends Controller
         $query = $product->reviews()->with('user');
 
         // Only show approved reviews for non-admin users
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
+        $isAdmin = false;
+        try {
+            $user = auth()->user();
+            $isAdmin = $user && $user->isAdmin();
+        } catch (\Throwable $e) {
+            // Invalid/expired JWT or no token - treat as public
+        }
+        if (!$isAdmin) {
             $query->approved();
         }
 

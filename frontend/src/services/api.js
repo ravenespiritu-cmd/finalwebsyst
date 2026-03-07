@@ -1,17 +1,25 @@
 import axios from 'axios';
 
-// Create axios instance with default config
+function getBaseURL() {
+  const raw =
+    (typeof window !== 'undefined' && (window.__API_BASE_URL__ || window.__VITE_API_URL__)) ||
+    import.meta.env.VITE_API_URL ||
+    'http://localhost:8000/api/v1';
+  return String(raw).replace(/\/$/, '');
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// Use current base URL on every request (supports runtime config)
 api.interceptors.request.use(
   (config) => {
+    config.baseURL = getBaseURL();
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -40,7 +48,7 @@ api.interceptors.response.use(
 );
 
 // Base URL for redirects (e.g. Google OAuth)
-const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const apiBaseURL = getBaseURL;
 
 // Auth API
 export const authAPI = {
@@ -52,7 +60,7 @@ export const authAPI = {
   updateProfile: (data) => api.put('/profile', data),
   changePassword: (data) => api.put('/change-password', data),
   /** URL to start Google sign-in (open in same window). */
-  getGoogleAuthURL: () => `${apiBaseURL}/auth/google`,
+  getGoogleAuthURL: () => `${apiBaseURL()}/auth/google`,
 };
 
 // Products API

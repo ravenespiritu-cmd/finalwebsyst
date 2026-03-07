@@ -39,7 +39,7 @@ RUN set -e; \
   echo 'php artisan config:clear 2>&1 || true' >> /docker-entrypoint.sh; \
   echo 'php artisan cache:clear 2>&1 || true' >> /docker-entrypoint.sh; \
   echo 'echo "=== Starting Laravel server ==="' >> /docker-entrypoint.sh; \
-  echo 'exec php artisan serve --host=0.0.0.0 --port=8080' >> /docker-entrypoint.sh; \
+  echo 'exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}' >> /docker-entrypoint.sh; \
   chmod +x /docker-entrypoint.sh
 
 EXPOSE 8080

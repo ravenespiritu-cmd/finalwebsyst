@@ -13,6 +13,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [meta, setMeta] = useState({
     current_page: 1,
@@ -64,12 +65,16 @@ const Products = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const params = Object.fromEntries(searchParams.entries());
       const response = await productsAPI.getAll(params);
       setProducts(response.data.data || []);
       setMeta(response.data.meta || { current_page: 1, last_page: 1, total: 0 });
     } catch (error) {
       console.error('Failed to fetch products:', error);
+      setFetchError(error.response?.data?.message || 'Could not load products. Check your connection.');
+      setProducts([]);
+      setMeta({ current_page: 1, last_page: 1, total: 0 });
     } finally {
       setLoading(false);
     }
@@ -305,13 +310,28 @@ const Products = () => {
               </>
             ) : (
               <div className="text-center py-16">
-                <p className="text-gray-500 text-lg">No products found</p>
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 text-primary-600 hover:text-primary-700"
-                >
-                  Clear filters
-                </button>
+                {fetchError ? (
+                  <>
+                    <p className="text-red-600 text-lg font-medium">{fetchError}</p>
+                    <p className="text-gray-500 text-sm mt-2">Make sure the backend is running and VITE_API_URL is set correctly.</p>
+                    <button
+                      onClick={() => { setFetchError(null); fetchProducts(); }}
+                      className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    >
+                      Try again
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-500 text-lg">No products found</p>
+                    <button
+                      onClick={clearFilters}
+                      className="mt-4 text-primary-600 hover:text-primary-700"
+                    >
+                      Clear filters
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

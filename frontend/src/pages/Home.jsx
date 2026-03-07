@@ -14,21 +14,32 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const FETCH_TIMEOUT_MS = 12000; // 12s so we never stick on loading
+
     const fetchData = async () => {
       try {
+        const fetchWithTimeout = (promise) =>
+          Promise.race([
+            promise,
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), FETCH_TIMEOUT_MS)
+            ),
+          ]);
+
         const [featuredRes, newRes, saleRes, catRes] = await Promise.all([
-          productsAPI.getFeatured(),
-          productsAPI.getNewArrivals(),
-          productsAPI.getOnSale(),
-          categoriesAPI.getAll({ root_only: true, active: true }),
+          fetchWithTimeout(productsAPI.getFeatured()),
+          fetchWithTimeout(productsAPI.getNewArrivals()),
+          fetchWithTimeout(productsAPI.getOnSale()),
+          fetchWithTimeout(categoriesAPI.getAll({ root_only: true, active: true })),
         ]);
 
-        setFeaturedProducts(featuredRes.data.data || []);
-        setNewArrivals(newRes.data.data || []);
-        setSaleProducts(saleRes.data.data || []);
-        setCategories(catRes.data.data || []);
+        setFeaturedProducts(featuredRes?.data?.data || []);
+        setNewArrivals(newRes?.data?.data || []);
+        setSaleProducts(saleRes?.data?.data || []);
+        setCategories(catRes?.data?.data || []);
       } catch (error) {
         console.error('Failed to fetch home data:', error);
+        // Show page with empty sections instead of staying on loading
       } finally {
         setLoading(false);
       }

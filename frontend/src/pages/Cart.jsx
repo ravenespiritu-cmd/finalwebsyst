@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { FaMinus, FaPlus, FaTrash, FaShoppingCart, FaTag } from 'react-icons/fa';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { toAbsoluteImageUrl } from '../utils/imageUrl';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import { useState } from 'react';
@@ -76,7 +77,7 @@ const Cart = () => {
                     {/* Product Image */}
                     <Link to={`/products/${item.product?.slug}`} className="flex-shrink-0">
                       <img
-                        src={item.product?.thumbnail || '/placeholder-product.jpg'}
+                        src={toAbsoluteImageUrl(item.product?.thumbnail, '/placeholder-product.jpg')}
                         alt={item.product?.name}
                         className="w-24 h-24 object-cover rounded-lg"
                       />

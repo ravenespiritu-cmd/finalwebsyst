@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaPlus, FaMinus, FaEdit } from 'react-icons/fa';
 import { productsAPI } from '../../services/api';
+import { toAbsoluteImageUrl } from '../../utils/imageUrl';
 import { toast } from 'react-toastify';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -183,7 +184,7 @@ const Inventory = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.thumbnail || '/placeholder-product.jpg'}
+                          src={toAbsoluteImageUrl(product.thumbnail, '/placeholder-product.jpg')}
                           alt={product.name}
                           className="w-12 h-12 object-cover rounded-lg"
                         />
@@ -237,7 +238,7 @@ const Inventory = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
               <img
-                src={selectedProduct.thumbnail || '/placeholder-product.jpg'}
+                src={toAbsoluteImageUrl(selectedProduct.thumbnail, '/placeholder-product.jpg')}
                 alt={selectedProduct.name}
                 className="w-16 h-16 object-cover rounded-lg"
               />

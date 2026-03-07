@@ -5,6 +5,7 @@ import { FaCreditCard, FaMoneyBill, FaMobile, FaCheckCircle } from 'react-icons/
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersAPI, paymentsAPI } from '../services/api';
+import { toAbsoluteImageUrl } from '../utils/imageUrl';
 import { toast } from 'react-toastify';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
@@ -479,7 +480,7 @@ const Checkout = () => {
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <img
-                        src={item.product?.thumbnail || '/placeholder-product.jpg'}
+                        src={toAbsoluteImageUrl(item.product?.thumbnail, '/placeholder-product.jpg')}
                         alt={item.product?.name}
                         className="w-16 h-16 object-cover rounded-lg"
                       />

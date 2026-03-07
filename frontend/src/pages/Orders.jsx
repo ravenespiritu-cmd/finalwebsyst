@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaBox, FaEye } from 'react-icons/fa';
 import { ordersAPI } from '../services/api';
+import { toAbsoluteImageUrl } from '../utils/imageUrl';
 import Loading from '../components/common/Loading';
 import Badge from '../components/common/Badge';
 import Pagination from '../components/common/Pagination';
@@ -114,7 +115,7 @@ const Orders = () => {
                       {order.items?.slice(0, 4).map((item) => (
                         <div key={item.id} className="flex items-center gap-3">
                           <img
-                            src={item.product?.thumbnail || '/placeholder-product.jpg'}
+                            src={toAbsoluteImageUrl(item.product?.thumbnail, '/placeholder-product.jpg')}
                             alt={item.product_name}
                             className="w-16 h-16 object-cover rounded-lg"
                           />

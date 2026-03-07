@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaImage, FaSpinner } from 'react-icons/fa';
 import { productsAPI, categoriesAPI, uploadAPI } from '../../services/api';
+import { toAbsoluteImageUrl } from '../../utils/imageUrl';
 import { toast } from 'react-toastify';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -225,7 +226,7 @@ const Products = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.thumbnail || '/placeholder-product.jpg'}
+                          src={toAbsoluteImageUrl(product.thumbnail, '/placeholder-product.jpg')}
                           alt={product.name}
                           className="w-12 h-12 object-cover rounded-lg"
                         />
@@ -303,7 +304,7 @@ const Products = () => {
               <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
                 {formData.thumbnail ? (
                   <img
-                    src={formData.thumbnail}
+                    src={toAbsoluteImageUrl(formData.thumbnail, '/placeholder-product.jpg')}
                     alt="Product preview"
                     className="w-full h-full object-cover"
                   />
