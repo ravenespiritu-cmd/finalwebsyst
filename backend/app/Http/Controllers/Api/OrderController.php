@@ -20,7 +20,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = Order::with(['items', 'payment', 'delivery']);
+        $query = Order::with(['items.product', 'payment', 'delivery']);
 
         if (!$user->isAdmin()) {
             $query->where('user_id', $user->id);

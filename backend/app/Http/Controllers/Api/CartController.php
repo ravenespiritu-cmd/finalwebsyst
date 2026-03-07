@@ -90,6 +90,8 @@ class CartController extends Controller
             ]);
         }
 
+        // Refresh cart from DB so subtotal/tax/total reflect calculateTotals() from CartItem events
+        $cart->refresh();
         $cart->load('items.product');
 
         return $this->successResponse([
@@ -129,6 +131,8 @@ class CartController extends Controller
             'unit_price' => $product->effective_price,
         ]);
 
+        // Refresh cart from DB so subtotal/tax/total reflect calculateTotals() from CartItem::saved
+        $cart->refresh();
         $cart->load('items.product');
 
         return $this->successResponse([
@@ -151,6 +155,8 @@ class CartController extends Controller
 
         $cartItem->delete();
 
+        // Refresh cart from DB so subtotal/tax/total reflect calculateTotals() from CartItem::deleted
+        $cart->refresh();
         $cart->load('items.product');
 
         return $this->successResponse([
