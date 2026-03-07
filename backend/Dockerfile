@@ -9,13 +9,9 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Build context may be repo root (monorepo) or backend/ — copy backend into /app
+COPY backend /app
 WORKDIR /app
-
-# Copy ALL application files first
-COPY . .
-
-# Debug: List files to verify artisan exists
-RUN ls -la && ls -la artisan || echo "artisan not found"
 
 # Remove any existing composer.lock to avoid version conflicts
 RUN rm -f composer.lock
