@@ -8,7 +8,9 @@ return [
         'smtp' => [
             'transport' => 'smtp',
             'host' => (function () {
-                $raw = (string) env('MAIL_HOST', 'smtp.mailgun.org');
+                $raw = trim((string) env('MAIL_HOST', 'smtp.mailgun.org'));
+                // Railway sometimes stores values with quotes; normalize them.
+                $raw = trim($raw, " \t\n\r\0\x0B\"'");
                 // Some deployments accidentally set MAIL_HOST like "smtp-relay.brevo.com:587".
                 // Strip the ":port" portion so PHP's SMTP host is valid.
                 if (preg_match('/^(.+):(\d+)$/', $raw, $m)) {
@@ -17,7 +19,8 @@ return [
                 return $raw;
             })(),
             'port' => (function () {
-                $rawHost = (string) env('MAIL_HOST', 'smtp.mailgun.org');
+                $rawHost = trim((string) env('MAIL_HOST', 'smtp.mailgun.org'));
+                $rawHost = trim($rawHost, " \t\n\r\0\x0B\"'");
                 $rawPort = (int) env('MAIL_PORT', 587);
                 if (preg_match('/^(.+):(\d+)$/', $rawHost, $m)) {
                     return (int) $m[2];
