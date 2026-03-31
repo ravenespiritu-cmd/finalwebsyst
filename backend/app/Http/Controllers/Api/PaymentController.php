@@ -136,8 +136,7 @@ class PaymentController extends Controller
                 ],
             ]);
 
-            // Update order status
-            $order->updateStatus(Order::STATUS_CONFIRMED);
+            // Keep order pending after payment; supplier confirms and processes fulfillment.
 
             // Clear cart now that payment is complete (cart was kept when order was created for non-COD)
             $userCart = Cart::where('user_id', $user->id)->first();
@@ -158,32 +157,14 @@ class PaymentController extends Controller
     }
 
     /**
-     * Update payment status (Admin only).
+     * Admin payment status updates are disabled (oversight-only admin role).
      */
     public function updateStatus(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,processing,completed,failed,refunded,cancelled',
-            'notes' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->errorResponse('Validation failed', 422, $validator->errors());
-        }
-
-        $payment = Payment::find($id);
-
-        if (!$payment) {
-            return $this->errorResponse('Payment not found', 404);
-        }
-
-        $payment->update([
-            'status' => $request->status,
-            'notes' => $request->notes,
-            'paid_at' => $request->status === 'completed' ? now() : $payment->paid_at,
-        ]);
-
-        return $this->successResponse($payment, 'Payment status updated');
+        return $this->errorResponse(
+            'Admins can monitor payments but cannot alter payment transactions.',
+            403
+        );
     }
 
     /**
@@ -255,9 +236,7 @@ class PaymentController extends Controller
                 ]);
             }
 
-            if ($order->status !== Order::STATUS_CONFIRMED) {
-                $order->updateStatus(Order::STATUS_CONFIRMED);
-            }
+            // Keep order pending after payment; supplier confirms and processes fulfillment.
 
             $userCart = Cart::where('user_id', $order->user_id)->first();
             if ($userCart) {
@@ -279,34 +258,13 @@ class PaymentController extends Controller
     }
 
     /**
-     * Refund payment (Admin only).
+     * Admin refunds are disabled (oversight-only admin role).
      */
     public function refund(Request $request, $id)
     {
-        $payment = Payment::find($id);
-
-        if (!$payment) {
-            return $this->errorResponse('Payment not found', 404);
-        }
-
-        if ($payment->status !== Payment::STATUS_COMPLETED) {
-            return $this->errorResponse('Only completed payments can be refunded', 400);
-        }
-
-        // Process refund (mock)
-        $payment->update([
-            'status' => Payment::STATUS_REFUNDED,
-            'notes' => $request->reason ?? 'Refund processed',
-        ]);
-
-        // Update order status
-        $payment->order->updateStatus(Order::STATUS_REFUNDED);
-
-        // Restore stock
-        foreach ($payment->order->items as $item) {
-            $item->product->increaseStock($item->quantity);
-        }
-
-        return $this->successResponse($payment, 'Payment refunded successfully');
+        return $this->errorResponse(
+            'Admins can monitor payments but cannot process refunds.',
+            403
+        );
     }
 }

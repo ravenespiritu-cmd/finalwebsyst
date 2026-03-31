@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FaEye } from 'react-icons/fa';
+import { useEffect, useMemo, useState } from 'react';
 import { deliveriesAPI, logisticsAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import Modal from '../../components/common/Modal';
@@ -10,23 +8,26 @@ import Badge from '../../components/common/Badge';
 import LogisticsHandoffPanel from '../../components/logistics/LogisticsHandoffPanel';
 
 /**
- * Dedicated logistics workflow: regional hub (Luzon / Visayas / Mindanao), local carriers, branch dropdowns,
- * station intake, customer notification, and rider assignment.
+ * Supplier logistics workflow:
+ * - Station intake / handoff is performed by the supplier for deliveries containing their products.
+ * - Admin remains monitoring-only.
  */
-const Logistics = () => {
-  const [tab, setTab] = useState('intake');
+export default function SupplierLogistics() {
+  const [tab, setTab] = useState('intake'); // intake | progress
   const [catalog, setCatalog] = useState(null);
+
   const [deliveries, setDeliveries] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
+
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await logisticsAPI.getCatalog();
+        const res = await logisticsAPI.supplierGetCatalog();
         if (!cancelled) setCatalog(res.data.data || null);
       } catch {
         if (!cancelled) toast.error('Failed to load logistics catalog');
@@ -43,11 +44,9 @@ const Logistics = () => {
       const params = {
         page,
         per_page: 15,
-        ...(tab === 'intake'
-          ? { logistics_intake_pending: true }
-          : { logistics_after_intake: true }),
+        ...(tab === 'intake' ? { logistics_intake_pending: true } : { logistics_after_intake: true }),
       };
-      const response = await deliveriesAPI.getAll(params);
+      const response = await deliveriesAPI.supplierGetAll(params);
       setDeliveries(response.data.data || []);
       setMeta(response.data.meta || { current_page: 1, last_page: 1 });
     } catch (e) {
@@ -60,11 +59,12 @@ const Logistics = () => {
 
   useEffect(() => {
     fetchList(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   const openDetail = async (id) => {
     try {
-      const response = await deliveriesAPI.getOne(id);
+      const response = await deliveriesAPI.supplierGetOne(id);
       setSelectedDelivery(response.data.data);
       setShowModal(true);
     } catch {
@@ -72,7 +72,24 @@ const Logistics = () => {
     }
   };
 
-  const regionLabel = (key) => catalog?.regions?.find((r) => r.key === key)?.label || key || '—';
+  const regionLabel = (key) =>
+    catalog?.regions?.find((r) => r.key === key)?.label || key || '—';
+
+  const getStatusBadge = (status) => {
+    const variants = {
+      pending: 'warning',
+      assigned: 'info',
+      picked_up: 'primary',
+      in_transit: 'primary',
+      out_for_delivery: 'primary',
+      delivered: 'success',
+      failed: 'danger',
+      returned: 'danger',
+    };
+    return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
+  };
+
+  const title = useMemo(() => (tab === 'intake' ? 'Awaiting hub intake' : 'At hub / out for delivery'), [tab]);
 
   return (
     <div>
@@ -80,14 +97,9 @@ const Logistics = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Logistics</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Local hubs: Luzon, Visayas, Mindanao — carriers: LBC, J&amp;T, Ninja Van, 2GO. Receive parcels at a branch,
-            notify the customer, then assign riders for last-mile delivery.
+            Receive parcels at local hubs, notify customers, and let the system assign riders automatically.
           </p>
-          <p className="text-xs text-amber-700 mt-2">Admin monitoring only - logistics handoff actions are supplier-managed.</p>
         </div>
-        <Link to="/admin/deliveries" className="text-sm font-medium text-primary-600 hover:text-primary-700">
-          ← All deliveries
-        </Link>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -95,19 +107,19 @@ const Logistics = () => {
           type="button"
           onClick={() => setTab('intake')}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            tab === 'intake' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border border-gray-200'
+            tab === 'intake' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-200'
           }`}
         >
-          Awaiting hub intake
+          {title === 'Awaiting hub intake' ? 'Awaiting hub intake' : 'Awaiting hub intake'}
         </button>
         <button
           type="button"
           onClick={() => setTab('progress')}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            tab === 'progress' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border border-gray-200'
+            tab === 'progress' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 border border-gray-200'
           }`}
         >
-          At hub / out for delivery
+          {title === 'At hub / out for delivery' ? 'At hub / out for delivery' : 'At hub / out for delivery'}
         </button>
       </div>
 
@@ -159,17 +171,15 @@ const Logistics = () => {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={d.status === 'pending' ? 'warning' : 'info'}>{d.status?.replace(/_/g, ' ')}</Badge>
-                      </td>
+                      <td className="px-6 py-4">{getStatusBadge(d.status)}</td>
                       <td className="px-6 py-4">
                         <button
                           type="button"
                           onClick={() => openDetail(d.id)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg"
                           aria-label="View"
                         >
-                          <FaEye />
+                          View
                         </button>
                       </td>
                     </tr>
@@ -179,8 +189,13 @@ const Logistics = () => {
             </table>
           </div>
         )}
+
         <div className="p-4 border-t">
-          <Pagination currentPage={meta.current_page} totalPages={meta.last_page} onPageChange={fetchList} />
+          <Pagination
+            currentPage={meta.current_page}
+            totalPages={meta.last_page}
+            onPageChange={fetchList}
+          />
         </div>
       </div>
 
@@ -201,7 +216,6 @@ const Logistics = () => {
             <LogisticsHandoffPanel
               catalog={catalog}
               delivery={selectedDelivery}
-              readOnly
               onSuccess={(updated) => {
                 setSelectedDelivery(updated);
                 fetchList(meta.current_page);
@@ -210,9 +224,7 @@ const Logistics = () => {
           </div>
         )}
       </Modal>
-
     </div>
   );
-};
+}
 
-export default Logistics;

@@ -28,6 +28,7 @@ const SupplierLayout = () => {
     { name: 'My Products', path: '/supplier/products', icon: FaBox },
     { name: 'Inventory', path: '/supplier/inventory', icon: FaWarehouse },
     { name: 'Stock Requests', path: '/supplier/stock-requests', icon: FaTruck },
+    { name: 'Logistics', path: '/supplier/logistics', icon: FaTruck },
     { name: 'Reviews', path: '/supplier/reviews', icon: FaStar },
     { name: 'Orders', path: '/supplier/orders', icon: FaShoppingCart },
     { name: 'Messages', path: '/supplier/messages', icon: FaEnvelope },

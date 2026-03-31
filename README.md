@@ -4,6 +4,11 @@ A modern, full-stack e-commerce web application for cosmetics and beauty product
 
 > **📄 Project Proposal:** See [PROJECT_PROPOSAL.md](PROJECT_PROPOSAL.md) for the full functional and non-functional requirements document.
 
+## System Documentation
+
+To understand how the frontend, backend, and the order pipeline fit together, see:
+- `SYSTEM_DOCUMENTATION.md` (one-file “all in one” documentation)
+
 ## Requirements
 
 - **Backend:** PHP **8.1 or newer** (Laravel 10 and Composer require `^8.1`). If you see *"Composer detected issues in your platform"*, see [backend/PHP_SETUP.md](backend/PHP_SETUP.md) for Windows setup, upgrade PHP via [php.net](https://www.php.net/downloads), or use a version manager (e.g. [Laravel Herd](https://herd.laravel.com)).

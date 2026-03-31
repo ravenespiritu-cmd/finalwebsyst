@@ -37,6 +37,7 @@ $regionMeta = [
             ['city' => 'Cagayan de Oro', 'name' => 'Northern Mindanao Hub'],
             ['city' => 'Zamboanga City', 'name' => 'Western Mindanao Hub'],
             ['city' => 'General Santos', 'name' => 'Soccsksargen Hub'],
+            ['city' => 'Butuan City', 'name' => 'Caraga Hub'],
         ],
     ],
 ];

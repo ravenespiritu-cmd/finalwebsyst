@@ -6,7 +6,7 @@ import Button from '../common/Button';
 /**
  * Regional logistics dropdowns (Luzon / Visayas / Mindanao) and local carriers + branch list.
  */
-export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) {
+export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess, readOnly = false }) {
   const [regionKey, setRegionKey] = useState('');
   const [provider, setProvider] = useState('');
   const [branchId, setBranchId] = useState('');
@@ -33,13 +33,12 @@ export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) 
 
     try {
       setSubmitting(true);
-      await deliveriesAPI.arriveAtStation(delivery.id, {
+      const response = await deliveriesAPI.supplierArriveAtStation(delivery.id, {
         logistics_region: regionKey,
         logistics_provider: provider,
         branch_id: branchId,
       });
-      const response = await deliveriesAPI.getOne(delivery.id);
-      const updated = response.data.data;
+      const updated = response.data?.data ?? null;
       onSuccess?.(updated);
       toast.success(response.data?.message || 'Parcel received at station');
     } catch (error) {
@@ -86,7 +85,7 @@ export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) 
               setRegionKey(e.target.value);
               setBranchId('');
             }}
-            disabled={locked}
+            disabled={locked || readOnly}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100"
           >
             <option value="">Select region…</option>
@@ -105,7 +104,7 @@ export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) 
               setProvider(e.target.value);
               setBranchId('');
             }}
-            disabled={locked}
+            disabled={locked || readOnly}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100"
           >
             <option value="">Select provider…</option>
@@ -121,7 +120,7 @@ export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) 
           <select
             value={branchId}
             onChange={(e) => setBranchId(e.target.value)}
-            disabled={locked || !regionKey || !provider || branchOptions.length === 0}
+            disabled={locked || readOnly || !regionKey || !provider || branchOptions.length === 0}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100"
           >
             <option value="">
@@ -157,13 +156,11 @@ export default function LogisticsHandoffPanel({ catalog, delivery, onSuccess }) 
         <Button
           variant="primary"
           onClick={handleSubmit}
-          disabled={
-            submitting ||
-            delivery?.status === 'delivered' ||
-            Boolean(delivery?.station_arrived_at)
-          }
+          disabled={readOnly || submitting || delivery?.status === 'delivered' || Boolean(delivery?.station_arrived_at)}
         >
-          {delivery?.station_arrived_at
+          {readOnly
+            ? 'Monitoring only (supplier action required)'
+            : delivery?.station_arrived_at
             ? 'Already checked in at hub'
             : submitting
               ? 'Processing…'

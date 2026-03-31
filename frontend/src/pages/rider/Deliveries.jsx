@@ -11,6 +11,7 @@ import Pagination from '../../components/common/Pagination';
 
 const Deliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
+  const [claimableDeliveries, setClaimableDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
   const [selectedDelivery, setSelectedDelivery] = useState(null);
@@ -31,9 +32,13 @@ const Deliveries = () => {
       setLoading(true);
       const params = { page };
       if (statusFilter) params.status = statusFilter;
-      const response = await deliveriesAPI.riderGetAll(params);
-      setDeliveries(response.data.data || []);
-      setMeta(response.data.meta || { current_page: 1, last_page: 1 });
+      const [assignedRes, claimableRes] = await Promise.all([
+        deliveriesAPI.riderGetAll(params),
+        deliveriesAPI.riderGetClaimable({ per_page: 5 }),
+      ]);
+      setDeliveries(assignedRes.data.data || []);
+      setMeta(assignedRes.data.meta || { current_page: 1, last_page: 1 });
+      setClaimableDeliveries(claimableRes.data.data || []);
     } catch (error) {
       console.error('Failed to fetch deliveries:', error);
     } finally {
@@ -87,6 +92,17 @@ const Deliveries = () => {
       fetchDeliveries(meta.current_page);
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to complete delivery';
+      toast.error(message);
+    }
+  };
+
+  const claimDelivery = async (deliveryId) => {
+    try {
+      await deliveriesAPI.riderClaim(deliveryId);
+      toast.success('Delivery claimed successfully');
+      fetchDeliveries(1);
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to claim delivery';
       toast.error(message);
     }
   };
@@ -149,6 +165,28 @@ const Deliveries = () => {
       </div>
 
       {/* Deliveries List */}
+      {claimableDeliveries.length > 0 && (
+        <div className="mb-6 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Available for Claim</h3>
+          <div className="space-y-3">
+            {claimableDeliveries.map((delivery) => (
+              <div key={`claimable-${delivery.id}`} className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm text-gray-700">
+                    <p className="font-medium text-gray-800">{delivery.tracking_number}</p>
+                    <p>Order: {delivery.order?.order_number}</p>
+                    <p>{delivery.order?.shipping_city}</p>
+                  </div>
+                  <Button size="sm" variant="primary" onClick={() => claimDelivery(delivery.id)}>
+                    Claim Delivery
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {loading ? (
           <Loading />

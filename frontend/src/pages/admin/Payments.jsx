@@ -6,7 +6,6 @@ import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
 import Pagination from '../../components/common/Pagination';
 import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
@@ -16,8 +15,6 @@ const Payments = () => {
   const [showModal, setShowModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
-  const [updating, setUpdating] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
     fetchPayments();
@@ -46,28 +43,9 @@ const Payments = () => {
     try {
       const response = await paymentsAPI.getOne(id);
       setSelectedPayment(response.data.data);
-      setNewStatus(response.data.data?.status || '');
       setShowModal(true);
     } catch (error) {
       toast.error('Failed to fetch payment details');
-    }
-  };
-
-  const updateStatus = async () => {
-    if (!selectedPayment || !newStatus || newStatus === selectedPayment.status) return;
-    try {
-      setUpdating(true);
-      await paymentsAPI.updateStatus(selectedPayment.id, { status: newStatus });
-      toast.success('Payment status updated');
-      fetchPayments(meta.current_page);
-      const response = await paymentsAPI.getOne(selectedPayment.id);
-      setSelectedPayment(response.data.data);
-      setNewStatus(response.data.data?.status || '');
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update status';
-      toast.error(message);
-    } finally {
-      setUpdating(false);
     }
   };
 
@@ -225,27 +203,7 @@ const Payments = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Update Status</label>
-              <div className="flex gap-2">
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
-                >
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                  ))}
-                </select>
-                <Button
-                  onClick={updateStatus}
-                  disabled={updating || newStatus === selectedPayment.status}
-                  loading={updating}
-                >
-                  Update
-                </Button>
-              </div>
-            </div>
+            <p className="text-sm text-gray-500">Monitoring only - payment transactions are system/customer/supplier driven.</p>
 
             {selectedPayment.notes && (
               <div>

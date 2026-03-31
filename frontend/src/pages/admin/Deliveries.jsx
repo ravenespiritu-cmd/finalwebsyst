@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaEye, FaUserPlus, FaMoneyBillWave } from 'react-icons/fa';
-import { deliveriesAPI, logisticsAPI, paymentsAPI } from '../../services/api';
+import { FaEye, FaMoneyBillWave } from 'react-icons/fa';
+import { deliveriesAPI, logisticsAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
 import Pagination from '../../components/common/Pagination';
@@ -12,20 +11,15 @@ import LogisticsHandoffPanel from '../../components/logistics/LogisticsHandoffPa
 
 const Deliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
-  const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assigningDeliveryId, setAssigningDeliveryId] = useState(null);
-  const [selectedRider, setSelectedRider] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [logisticsCatalog, setLogisticsCatalog] = useState(null);
 
   useEffect(() => {
     fetchDeliveries();
-    fetchRiders();
   }, []);
 
   useEffect(() => {
@@ -63,15 +57,6 @@ const Deliveries = () => {
     }
   };
 
-  const fetchRiders = async () => {
-    try {
-      const response = await deliveriesAPI.getAvailableRiders();
-      setRiders(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch riders:', error);
-    }
-  };
-
   const viewDelivery = async (id) => {
     try {
       const response = await deliveriesAPI.getOne(id);
@@ -79,43 +64,6 @@ const Deliveries = () => {
       setShowModal(true);
     } catch (error) {
       toast.error('Failed to fetch delivery details');
-    }
-  };
-
-  const openAssignModal = (deliveryId) => {
-    setAssigningDeliveryId(deliveryId);
-    setSelectedRider('');
-    setShowAssignModal(true);
-  };
-
-  const assignRider = async () => {
-    if (!selectedRider) {
-      toast.error('Please select a rider');
-      return;
-    }
-    try {
-      await deliveriesAPI.assignRider(assigningDeliveryId, selectedRider);
-      toast.success('Rider assigned successfully');
-      setShowAssignModal(false);
-      fetchDeliveries(meta.current_page);
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to assign rider';
-      toast.error(message);
-    }
-  };
-
-  const updateStatus = async (deliveryId, status) => {
-    try {
-      await deliveriesAPI.updateStatus(deliveryId, { status });
-      toast.success('Status updated');
-      fetchDeliveries(meta.current_page);
-      if (selectedDelivery?.id === deliveryId) {
-        const response = await deliveriesAPI.getOne(deliveryId);
-        setSelectedDelivery(response.data.data);
-      }
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update status';
-      toast.error(message);
     }
   };
 
@@ -154,20 +102,6 @@ const Deliveries = () => {
       cancelled: 'default',
     };
     return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
-  };
-
-  const markPaymentComplete = async (paymentId) => {
-    try {
-      await paymentsAPI.updateStatus(paymentId, { status: 'completed' });
-      toast.success('Payment marked as completed');
-      if (selectedDelivery?.order?.id) {
-        const response = await deliveriesAPI.getOne(selectedDelivery.id);
-        setSelectedDelivery(response.data.data);
-      }
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update payment';
-      toast.error(message);
-    }
   };
 
   const statuses = ['pending', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'returned'];
@@ -238,13 +172,7 @@ const Deliveries = () => {
                       {delivery.rider ? (
                         <p className="text-gray-800">{delivery.rider.first_name} {delivery.rider.last_name}</p>
                       ) : (
-                        <button
-                          onClick={() => openAssignModal(delivery.id)}
-                          className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                        >
-                          <FaUserPlus />
-                          Assign
-                        </button>
+                        <span className="text-gray-400">Auto-assigned by system</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -288,18 +216,7 @@ const Deliveries = () => {
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-800 mb-2">Delivery Status</h4>
                 {getStatusBadge(selectedDelivery.status)}
-                <div className="mt-4">
-                  <label className="text-sm text-gray-500">Update Status:</label>
-                  <select
-                    value={selectedDelivery.status}
-                    onChange={(e) => updateStatus(selectedDelivery.id, e.target.value)}
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    {statuses.map((status) => (
-                      <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
-                    ))}
-                  </select>
-                </div>
+                <p className="mt-4 text-sm text-gray-500">Monitoring only - rider and supplier workflows update this automatically.</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-800 mb-2">Rider</h4>
@@ -332,15 +249,6 @@ const Deliveries = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {getPaymentStatusBadge(selectedDelivery.order.payment.status)}
-                    {selectedDelivery.status === 'delivered' &&
-                      !['completed', 'refunded', 'cancelled'].includes(selectedDelivery.order.payment.status) && (
-                        <button
-                          onClick={() => markPaymentComplete(selectedDelivery.order.payment.id)}
-                          className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Mark Paid
-                        </button>
-                      )}
                   </div>
                 </div>
               ) : (
@@ -357,6 +265,7 @@ const Deliveries = () => {
             <LogisticsHandoffPanel
               catalog={logisticsCatalog}
               delivery={selectedDelivery}
+              readOnly
               onSuccess={(updated) => {
                 setSelectedDelivery(updated);
                 fetchDeliveries(meta.current_page);
@@ -390,39 +299,6 @@ const Deliveries = () => {
             )}
           </div>
         )}
-      </Modal>
-
-      {/* Assign Rider Modal */}
-      <Modal
-        isOpen={showAssignModal}
-        onClose={() => setShowAssignModal(false)}
-        title="Assign Rider"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Rider</label>
-            <select
-              value={selectedRider}
-              onChange={(e) => setSelectedRider(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
-            >
-              <option value="">Select a rider...</option>
-              {riders.map((rider) => (
-                <option key={rider.id} value={rider.id}>
-                  {rider.first_name} {rider.last_name} - {rider.phone}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" onClick={() => setShowAssignModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={assignRider}>
-              Assign Rider
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );

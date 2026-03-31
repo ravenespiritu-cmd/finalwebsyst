@@ -66,6 +66,7 @@ import SupplierOrders from './pages/supplier/Orders';
 import SupplierMessages from './pages/supplier/Messages';
 import SupplierStockRequests from './pages/supplier/StockRequests';
 import SupplierReviews from './pages/supplier/Reviews';
+import SupplierLogistics from './pages/supplier/Logistics';
 
 // Route Guards
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -188,6 +189,7 @@ function App() {
               <Route path="stock-requests" element={<SupplierStockRequests />} />
               <Route path="reviews" element={<SupplierReviews />} />
               <Route path="orders" element={<SupplierOrders />} />
+              <Route path="logistics" element={<SupplierLogistics />} />
               <Route path="messages" element={<SupplierMessages />} />
             </Route>
           </Routes>

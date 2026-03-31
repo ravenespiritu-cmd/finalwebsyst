@@ -232,20 +232,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/products/{id}/release-stock', [ProductController::class, 'releaseStock']);
             Route::put('/products/{id}/warehouse-stock', [ProductController::class, 'updateWarehouseStock']);
 
-            // Orders management
-            Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
-
             // Payments management
             Route::get('/payments', [PaymentController::class, 'index']);
-            Route::put('/payments/{id}/status', [PaymentController::class, 'updateStatus']);
-            Route::post('/payments/{id}/refund', [PaymentController::class, 'refund']);
 
             // Deliveries management
             Route::get('/deliveries', [DeliveryController::class, 'index']);
             Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
-            Route::post('/deliveries/{id}/assign', [DeliveryController::class, 'assignRider']);
-            Route::post('/deliveries/{id}/arrive-station', [DeliveryController::class, 'arriveAtStation']);
-            Route::put('/deliveries/{id}/status', [DeliveryController::class, 'updateStatus']);
             Route::get('/deliveries-riders', [DeliveryController::class, 'availableRiders']);
 
             // Logistics (catalog for regional hubs / carriers)
@@ -280,9 +272,11 @@ Route::prefix('v1')->group(function () {
         });
 
         // Rider routes
-        Route::middleware('role:rider,admin')->prefix('rider')->group(function () {
+        Route::middleware('role:rider')->prefix('rider')->group(function () {
             Route::get('/deliveries', [DeliveryController::class, 'index']);
+            Route::get('/deliveries/claimable', [DeliveryController::class, 'claimable']);
             Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
+            Route::post('/deliveries/{id}/claim', [DeliveryController::class, 'claim']);
             Route::put('/deliveries/{id}/status', [DeliveryController::class, 'updateStatus']);
             Route::put('/deliveries/{id}/location', [DeliveryController::class, 'updateLocation']);
             Route::post('/deliveries/{id}/complete', [DeliveryController::class, 'complete']);
@@ -296,11 +290,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/reviews/pending', [ReviewController::class, 'supplierPending']);
             Route::post('/reviews/{id}/approve', [ReviewController::class, 'supplierApprove']);
             Route::post('/reviews/{id}/reject', [ReviewController::class, 'supplierReject']);
+            Route::get('/logistics/catalog', [LogisticsController::class, 'catalog']);
+            Route::get('/deliveries', [DeliveryController::class, 'supplierDeliveries']);
+            Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
             Route::get('/inventory', [StockRequestController::class, 'supplierInventory']);
             Route::post('/upload/image', [UploadController::class, 'uploadImage']);
             Route::post('/products', [ProductController::class, 'supplierStore']);
             Route::put('/products/{id}', [ProductController::class, 'supplierUpdate']);
             Route::put('/products/{id}/stock', [ProductController::class, 'supplierUpdateStock']);
+            Route::put('/orders/{id}/status', [OrderController::class, 'supplierUpdateStatus']);
+            Route::post('/deliveries/{id}/arrive-station', [DeliveryController::class, 'arriveAtStation']);
         });
     });
 });

@@ -76,8 +76,21 @@ class OrderController extends Controller
             return $this->errorResponse('Order not found', 404);
         }
 
-        // Customers can only view their own orders
-        if (!$user->isAdmin() && $order->user_id !== $user->id) {
+        if ($user->isAdmin()) {
+            // Admin oversight: can view any order.
+        } elseif ($user->isSupplier()) {
+            $store = Store::where('user_id', $user->id)->first();
+            if (! $store) {
+                return $this->errorResponse('Supplier store not found', 404);
+            }
+            $isSupplierOrder = $order->items->contains(function ($item) use ($store) {
+                return $item->product && (int) $item->product->store_id === (int) $store->id;
+            });
+            if (! $isSupplierOrder) {
+                return $this->errorResponse('Unauthorized', 403);
+            }
+        } elseif ($order->user_id !== $user->id) {
+            // Customers can only view their own orders.
             return $this->errorResponse('Unauthorized', 403);
         }
 
@@ -434,44 +447,67 @@ class OrderController extends Controller
     }
 
     /**
-     * Update order status (Admin only).
+     * Admin order status updates are disabled (oversight-only admin role).
      */
     public function updateStatus(Request $request, $id)
     {
+        return $this->errorResponse(
+            'Admins can monitor orders but cannot manage order transactions. Suppliers must update fulfillment status.',
+            403
+        );
+    }
+
+    /**
+     * Update order status for supplier-owned orders.
+     */
+    public function supplierUpdateStatus(Request $request, $id)
+    {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,confirmed,processing,shipped,out_for_delivery,delivered,cancelled,refunded',
+            'status' => 'required|in:confirmed,processing,shipped,cancelled',
         ]);
 
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', 422, $validator->errors());
         }
 
-        $order = Order::find($id);
+        $user = auth()->user();
+        $store = Store::where('user_id', $user->id)->first();
+        if (! $store) {
+            return $this->errorResponse('Supplier store not found', 404);
+        }
 
-        if (!$order) {
+        $order = Order::with(['items.product', 'delivery'])->find($id);
+        if (! $order) {
             return $this->errorResponse('Order not found', 404);
         }
 
-        $order->updateStatus($request->status);
+        $isSupplierOrder = $order->items->contains(function ($item) use ($store) {
+            return $item->product && (int) $item->product->store_id === (int) $store->id;
+        });
+        if (! $isSupplierOrder) {
+            return $this->errorResponse('Unauthorized', 403);
+        }
 
-        // Update delivery status accordingly
-        if (in_array($request->status, ['shipped', 'out_for_delivery', 'delivered'])) {
+        $targetStatus = $request->status;
+        if (! $this->isSupplierStatusTransitionAllowed($order->status, $targetStatus)) {
+            return $this->errorResponse('Invalid supplier status transition for this order state', 422);
+        }
+
+        $order->updateStatus($targetStatus);
+
+        if ($targetStatus === Order::STATUS_SHIPPED) {
             $delivery = $order->delivery;
             if ($delivery) {
-                $deliveryStatus = match($request->status) {
-                    'shipped' => Delivery::STATUS_IN_TRANSIT,
-                    'out_for_delivery' => Delivery::STATUS_OUT_FOR_DELIVERY,
-                    'delivered' => Delivery::STATUS_DELIVERED,
-                    default => $delivery->status,
-                };
-                $delivery->updateDeliveryStatus($deliveryStatus);
+                $delivery->updateDeliveryStatus(Delivery::STATUS_IN_TRANSIT);
             }
         }
 
-        // If cancelled, restore stock
-        if ($request->status === 'cancelled') {
+        if ($targetStatus === Order::STATUS_CANCELLED) {
             foreach ($order->items as $item) {
                 $item->product->increaseStock($item->quantity);
+            }
+            if ($order->payment && $order->payment->status !== Payment::STATUS_COMPLETED) {
+                $order->payment->update(['status' => Payment::STATUS_CANCELLED]);
             }
         }
 
@@ -490,7 +526,7 @@ class OrderController extends Controller
             return $this->errorResponse('Order not found', 404);
         }
 
-        if ($order->user_id !== $user->id && !$user->isAdmin()) {
+        if ($order->user_id !== $user->id) {
             return $this->errorResponse('Unauthorized', 403);
         }
 
@@ -533,5 +569,16 @@ class OrderController extends Controller
             'shipped_at' => $order->shipped_at,
             'delivered_at' => $order->delivered_at,
         ]);
+    }
+
+    protected function isSupplierStatusTransitionAllowed(string $currentStatus, string $targetStatus): bool
+    {
+        return match ($targetStatus) {
+            Order::STATUS_CONFIRMED => $currentStatus === Order::STATUS_PENDING,
+            Order::STATUS_PROCESSING => in_array($currentStatus, [Order::STATUS_PENDING, Order::STATUS_CONFIRMED], true),
+            Order::STATUS_SHIPPED => $currentStatus === Order::STATUS_PROCESSING,
+            Order::STATUS_CANCELLED => in_array($currentStatus, [Order::STATUS_PENDING, Order::STATUS_CONFIRMED, Order::STATUS_PROCESSING], true),
+            default => false,
+        };
     }
 }

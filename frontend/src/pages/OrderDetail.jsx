@@ -159,7 +159,10 @@ const OrderDetail = () => {
 
   const getCurrentStatusIndex = () => {
     if (order?.status === 'cancelled' || order?.status === 'refunded') return -1;
-    return orderStatuses.findIndex(s => s.key === order?.status);
+    if (order?.status === 'out_for_delivery') {
+      return orderStatuses.findIndex((s) => s.key === 'shipped');
+    }
+    return orderStatuses.findIndex((s) => s.key === order?.status);
   };
 
   if (loading) {

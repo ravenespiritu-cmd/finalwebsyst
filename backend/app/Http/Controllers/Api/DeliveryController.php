@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
+use App\Models\Store;
 use App\Models\User;
 use App\Notifications\ParcelAtLogisticsStationNotification;
 use App\Notifications\RiderAssignedForDeliveryNotification;
 use App\Support\LogisticsCatalog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -48,11 +50,59 @@ class DeliveryController extends Controller
         if ($request->boolean('logistics_intake_pending')) {
             $query->whereNull('station_arrived_at')
                 ->where('status', '!=', Delivery::STATUS_DELIVERED);
+            $query->whereHas('order', function ($q) {
+                $q->where('status', Order::STATUS_SHIPPED);
+            });
         }
 
         if ($request->boolean('logistics_after_intake')) {
             $query->whereNotNull('station_arrived_at')
                 ->where('status', '!=', Delivery::STATUS_DELIVERED);
+            $query->whereHas('order', function ($q) {
+                $q->where('status', Order::STATUS_SHIPPED);
+            });
+        }
+
+        $perPage = min($request->get('per_page', 10), 50);
+        $deliveries = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return $this->paginatedResponse($deliveries);
+    }
+
+    /**
+     * Supplier view: list only deliveries that include products from the supplier's store.
+     * Used for station intake / logistics handoff monitoring.
+     */
+    public function supplierDeliveries(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user->isSupplier()) {
+            return $this->errorResponse('Only suppliers can view their deliveries', 403);
+        }
+
+        $store = Store::where('user_id', $user->id)->first();
+        if (! $store) {
+            return $this->paginatedResponse(new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10));
+        }
+
+        $query = Delivery::query()
+            ->with(['order.user', 'rider', 'order.payment', 'order.items.product'])
+            ->whereHas('order.items.product', function ($q) use ($store) {
+                $q->where('store_id', $store->id);
+            });
+
+        if ($request->boolean('logistics_intake_pending')) {
+            $query->whereNull('station_arrived_at')
+                ->where('status', '!=', Delivery::STATUS_DELIVERED);
+        }
+
+        if ($request->boolean('logistics_after_intake')) {
+            $query->whereNotNull('station_arrived_at')
+                ->where('status', '!=', Delivery::STATUS_DELIVERED);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
         }
 
         $perPage = min($request->get('per_page', 10), 50);
@@ -67,7 +117,7 @@ class DeliveryController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        $delivery = Delivery::with(['order.items', 'order.user', 'order.payment', 'rider'])->find($id);
+        $delivery = Delivery::with(['order.items.product', 'order.user', 'order.payment', 'rider'])->find($id);
 
         if (!$delivery) {
             return $this->errorResponse('Delivery not found', 404);
@@ -78,11 +128,28 @@ class DeliveryController extends Controller
             return $this->errorResponse('Unauthorized', 403);
         }
 
+        // Suppliers can only view deliveries that include products from their store
+        if ($user->isSupplier()) {
+            $store = Store::where('user_id', $user->id)->first();
+            if (! $store) {
+                return $this->errorResponse('Supplier store not found', 404);
+            }
+
+            $isSupplierDelivery = $delivery->order?->items?->contains(function ($item) use ($store) {
+                return $item->product && (int) $item->product->store_id === (int) $store->id;
+            });
+
+            if (! $isSupplierDelivery) {
+                return $this->errorResponse('Unauthorized', 403);
+            }
+        }
+
         return $this->successResponse($delivery);
     }
 
     /**
      * Mark delivery as arrived at logistics station and auto-assign a rider.
+     * Allowed for supplier of the order; admin is oversight-only.
      */
     public function arriveAtStation(Request $request, $id)
     {
@@ -105,6 +172,27 @@ class DeliveryController extends Controller
 
         if ($delivery->station_arrived_at !== null) {
             return $this->errorResponse('This parcel was already checked in at a logistics hub', 422);
+        }
+
+        if ($delivery->order?->status !== Order::STATUS_SHIPPED) {
+            return $this->errorResponse('Logistics intake is only allowed after the order is marked as shipped', 422);
+        }
+
+        $user = auth()->user();
+        if (! $user->isSupplier()) {
+            return $this->errorResponse('Only suppliers can process logistics handoff for their orders', 403);
+        }
+        $store = Store::where('user_id', $user->id)->first();
+        if (! $store) {
+            return $this->errorResponse('Supplier store not found', 404);
+        }
+        $ownsOrder = $delivery->order?->items()
+            ->whereHas('product', function ($query) use ($store) {
+                $query->where('store_id', $store->id);
+            })
+            ->exists();
+        if (! $ownsOrder) {
+            return $this->errorResponse('Unauthorized', 403);
         }
 
         $region = $request->logistics_region;
@@ -159,43 +247,19 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Assign rider to delivery (Admin only).
+     * Rider assignment is automatic after station intake.
+     * Manual admin assignment is disabled (oversight-only admin role).
      */
     public function assignRider(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'rider_id' => 'required|exists:users,id',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->errorResponse('Validation failed', 422, $validator->errors());
-        }
-
-        $delivery = Delivery::find($id);
-
-        if (!$delivery) {
-            return $this->errorResponse('Delivery not found', 404);
-        }
-
-        $rider = User::find($request->rider_id);
-
-        if (!$rider->isRider()) {
-            return $this->errorResponse('Selected user is not a rider', 400);
-        }
-
-        $hadRider = $delivery->rider_id !== null;
-        $delivery->assignToRider($rider->id);
-        $delivery = $delivery->fresh(['order.user', 'rider']);
-
-        if (! $hadRider && $delivery->order?->user) {
-            $this->safeNotify($delivery->order->user, new RiderAssignedForDeliveryNotification($delivery));
-        }
-
-        return $this->successResponse($delivery, 'Rider assigned successfully');
+        return $this->errorResponse(
+            'Manual rider assignment is disabled. Rider assignment is handled automatically during logistics handoff.',
+            403
+        );
     }
 
     /**
-     * Update delivery status (Rider/Admin).
+     * Update delivery status (Rider only).
      */
     public function updateStatus(Request $request, $id)
     {
@@ -216,8 +280,12 @@ class DeliveryController extends Controller
             return $this->errorResponse('Delivery not found', 404);
         }
 
+        if (! $user->isRider()) {
+            return $this->errorResponse('Only riders can update delivery status', 403);
+        }
+
         // Riders can only update their assigned deliveries
-        if ($user->isRider() && $delivery->rider_id !== $user->id) {
+        if ($delivery->rider_id !== $user->id) {
             return $this->errorResponse('Unauthorized', 403);
         }
 
@@ -240,7 +308,7 @@ class DeliveryController extends Controller
     }
 
     /**
-     * Update delivery location (Rider).
+     * Update delivery location (Rider only).
      */
     public function updateLocation(Request $request, $id)
     {
@@ -261,7 +329,11 @@ class DeliveryController extends Controller
             return $this->errorResponse('Delivery not found', 404);
         }
 
-        if ($user->isRider() && $delivery->rider_id !== $user->id) {
+        if (! $user->isRider()) {
+            return $this->errorResponse('Only riders can update delivery location', 403);
+        }
+
+        if ($delivery->rider_id !== $user->id) {
             return $this->errorResponse('Unauthorized', 403);
         }
 
@@ -296,7 +368,11 @@ class DeliveryController extends Controller
             return $this->errorResponse('Delivery not found', 404);
         }
 
-        if ($user->isRider() && $delivery->rider_id !== $user->id) {
+        if (! $user->isRider()) {
+            return $this->errorResponse('Only riders can complete deliveries', 403);
+        }
+
+        if ($delivery->rider_id !== $user->id) {
             return $this->errorResponse('Unauthorized', 403);
         }
 
@@ -349,6 +425,91 @@ class DeliveryController extends Controller
             ->get(['id', 'first_name', 'last_name', 'email', 'phone']);
 
         return $this->successResponse($riders);
+    }
+
+    /**
+     * List claimable deliveries for riders (unassigned but already at logistics station).
+     */
+    public function claimable(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user->isRider()) {
+            return $this->errorResponse('Only riders can view claimable deliveries', 403);
+        }
+
+        $query = Delivery::with(['order.user'])
+            ->whereNull('rider_id')
+            ->whereNotNull('station_arrived_at')
+            ->whereIn('status', [Delivery::STATUS_IN_TRANSIT, Delivery::STATUS_ASSIGNED]);
+
+        if ($request->has('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $perPage = min($request->get('per_page', 10), 50);
+        $deliveries = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return $this->paginatedResponse($deliveries);
+    }
+
+    /**
+     * Rider claims an unassigned delivery.
+     */
+    public function claim($id)
+    {
+        $user = auth()->user();
+        if (! $user->isRider()) {
+            return $this->errorResponse('Only riders can claim deliveries', 403);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $delivery = Delivery::with(['order.user'])
+                ->lockForUpdate()
+                ->find($id);
+
+            if (! $delivery) {
+                DB::rollBack();
+                return $this->errorResponse('Delivery not found', 404);
+            }
+
+            if ($delivery->rider_id !== null) {
+                DB::rollBack();
+                return $this->errorResponse('Delivery was already claimed by another rider', 409);
+            }
+
+            if ($delivery->station_arrived_at === null) {
+                DB::rollBack();
+                return $this->errorResponse('Delivery is not yet available for rider claim', 422);
+            }
+
+            if (! in_array($delivery->status, [Delivery::STATUS_IN_TRANSIT, Delivery::STATUS_ASSIGNED], true)) {
+                DB::rollBack();
+                return $this->errorResponse('Delivery cannot be claimed in its current status', 422);
+            }
+
+            $delivery->update([
+                'rider_id' => $user->id,
+                'status' => Delivery::STATUS_ASSIGNED,
+            ]);
+
+            DB::commit();
+
+            $delivery = $delivery->fresh(['order.user', 'rider']);
+            if ($delivery->order?->user) {
+                $this->safeNotify($delivery->order->user, new RiderAssignedForDeliveryNotification($delivery));
+            }
+
+            return $this->successResponse($delivery, 'Delivery claimed successfully');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return $this->errorResponse('Failed to claim delivery', 500);
+        }
     }
 
     /**

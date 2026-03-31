@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FaEye, FaSearch, FaFilter, FaTimes } from 'react-icons/fa';
+import { FaEye, FaSearch, FaFilter } from 'react-icons/fa';
 import { ordersAPI } from '../../services/api';
 import { formatShadeOptionLabel } from '../../utils/productShades';
-import { toast } from 'react-toastify';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Loading from '../../components/common/Loading';
@@ -49,35 +48,6 @@ const Orders = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId, status) => {
-    try {
-      await ordersAPI.updateStatus(orderId, { status });
-      toast.success('Order status updated');
-      fetchOrders(meta.current_page);
-      if (selectedOrder?.id === orderId) {
-        const response = await ordersAPI.getOne(orderId);
-        setSelectedOrder(response.data.data);
-      }
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update status';
-      toast.error(message);
-    }
-  };
-
-  const cancelOrder = async (orderId, e) => {
-    e?.stopPropagation();
-    if (!window.confirm('Cancel this unpaid order? Stock will be restored.')) return;
-    try {
-      await ordersAPI.updateStatus(orderId, { status: 'cancelled' });
-      toast.success('Order cancelled');
-      fetchOrders(meta.current_page);
-      if (selectedOrder?.id === orderId) setShowModal(false);
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to cancel order';
-      toast.error(message);
-    }
-  };
-
   const formatPrice = (amount) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -109,7 +79,7 @@ const Orders = () => {
     return <Badge variant={variants[status] || 'default'}>{status?.replace(/_/g, ' ')}</Badge>;
   };
 
-  const statuses = ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+  const statuses = ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'refunded'];
 
   return (
     <div>
@@ -192,15 +162,6 @@ const Orders = () => {
                       >
                         <FaEye />
                       </button>
-                      {order.status === 'pending' && (
-                        <button
-                          onClick={(e) => cancelOrder(order.id, e)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                          title="Cancel (unpaid)"
-                        >
-                          <FaTimes />
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -234,18 +195,7 @@ const Orders = () => {
                 <p className="text-sm text-gray-500">Current Status</p>
                 {getStatusBadge(selectedOrder.status)}
               </div>
-              <div>
-                <label className="text-sm text-gray-500 mr-2">Update Status:</label>
-                <select
-                  value={selectedOrder.status}
-                  onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
-                >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
-                  ))}
-                </select>
-              </div>
+              <p className="text-sm text-gray-500">Monitoring only - supplier-managed fulfillment</p>
             </div>
 
             {/* Customer Info */}

@@ -148,8 +148,8 @@ export const ordersAPI = {
   cancel: (id) => api.post(`/orders/${id}/cancel`),
   track: (orderNumber) => api.get(`/orders/track/${orderNumber}`),
   rateRider: (orderId, data) => api.post(`/orders/${orderId}/rate-rider`, data),
-  // Admin
-  updateStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
+  // Supplier
+  supplierUpdateStatus: (id, data) => api.put(`/supplier/orders/${id}/status`, data),
 };
 
 // Payments API
@@ -159,13 +159,12 @@ export const paymentsAPI = {
   process: (orderId, data) => api.post(`/payments/process/${orderId}`, data),
   // Admin
   getAll: (params) => api.get('/admin/payments', { params }),
-  updateStatus: (id, data) => api.put(`/admin/payments/${id}/status`, data),
-  refund: (id, data) => api.post(`/admin/payments/${id}/refund`, data),
 };
 
 // Logistics (admin): catalog for dropdowns
 export const logisticsAPI = {
   getCatalog: () => api.get('/admin/logistics/catalog'),
+  supplierGetCatalog: () => api.get('/supplier/logistics/catalog'),
 };
 
 // Deliveries API
@@ -174,13 +173,16 @@ export const deliveriesAPI = {
   // Admin
   getAll: (params) => api.get('/admin/deliveries', { params }),
   getOne: (id) => api.get(`/admin/deliveries/${id}`),
-  assignRider: (id, riderId) => api.post(`/admin/deliveries/${id}/assign`, { rider_id: riderId }),
-  arriveAtStation: (id, data) => api.post(`/admin/deliveries/${id}/arrive-station`, data),
-  updateStatus: (id, data) => api.put(`/admin/deliveries/${id}/status`, data),
   getAvailableRiders: () => api.get('/admin/deliveries-riders'),
+  // Supplier
+  supplierGetAll: (params) => api.get('/supplier/deliveries', { params }),
+  supplierGetOne: (id) => api.get(`/supplier/deliveries/${id}`),
+  supplierArriveAtStation: (id, data) => api.post(`/supplier/deliveries/${id}/arrive-station`, data),
   // Rider
   riderGetAll: (params) => api.get('/rider/deliveries', { params }),
+  riderGetClaimable: (params) => api.get('/rider/deliveries/claimable', { params }),
   riderGetOne: (id) => api.get(`/rider/deliveries/${id}`),
+  riderClaim: (id) => api.post(`/rider/deliveries/${id}/claim`),
   riderUpdateStatus: (id, data) => api.put(`/rider/deliveries/${id}/status`, data),
   riderUpdateLocation: (id, data) => api.put(`/rider/deliveries/${id}/location`, data),
   riderComplete: (id, data) => api.post(`/rider/deliveries/${id}/complete`, data),
