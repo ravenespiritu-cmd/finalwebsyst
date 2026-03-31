@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaStar, FaMinus, FaPlus, FaShoppingCart, FaHeart, FaShare, FaChevronDown } from 'react-icons/fa';
+import { FaStar, FaMinus, FaPlus, FaShoppingCart, FaHeart, FaShare, FaChevronDown, FaFacebookF, FaFacebookMessenger, FaTwitter, FaWhatsapp, FaLink } from 'react-icons/fa';
 import { productsAPI, reviewsAPI } from '../services/api';
 import { toAbsoluteImageUrl, PLACEHOLDER_PRODUCT } from '../utils/imageUrl';
 import { getProductShadesWithOriginal } from '../utils/productShades';
@@ -21,7 +21,10 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedShadeIdx, setSelectedShadeIdx] = useState(0);
   const [shadeMenuOpen, setShadeMenuOpen] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
   const shadeMenuRef = useRef(null);
+  const shareMenuRef = useRef(null);
 
   useEffect(() => {
     fetchProduct();
@@ -48,6 +51,17 @@ const ProductDetail = () => {
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [shadeMenuOpen]);
+
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const close = (e) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
+        setShareMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [shareMenuOpen]);
 
   const fetchProduct = async () => {
     try {
@@ -90,6 +104,90 @@ const ProductDetail = () => {
       }
     }
     addToCart(product.id, quantity, options);
+  };
+
+  const getShareUrl = () => {
+    if (typeof window === 'undefined') return '';
+    const canonicalPath = product?.slug ? `/products/${product.slug}` : window.location.pathname;
+    return `${window.location.origin}${canonicalPath}`;
+  };
+
+  const copyShareLink = async () => {
+    const url = getShareUrl();
+    if (!url) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopyMessage('Link copied!');
+      setTimeout(() => setCopyMessage(''), 2000);
+    } catch (error) {
+      console.error('Failed to copy share link:', error);
+      setCopyMessage('Failed to copy');
+      setTimeout(() => setCopyMessage(''), 2000);
+    }
+  };
+
+  const openShareWindow = (platform) => {
+    const shareUrl = encodeURIComponent(getShareUrl());
+    const shareText = encodeURIComponent(`Check this out: ${product?.name || 'Product'}`);
+    let url = '';
+
+    switch (platform) {
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
+        break;
+      case 'messenger':
+        // Works best on devices with Messenger app installed.
+        url = `fb-messenger://share?link=${shareUrl}`;
+        break;
+      case 'x':
+        url = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`;
+        break;
+      case 'whatsapp':
+        url = `https://wa.me/?text=${shareText}%20${shareUrl}`;
+        break;
+      default:
+        return;
+    }
+
+    if (platform === 'messenger') {
+      const opened = window.open(url, '_blank');
+      if (!opened) {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+    setShareMenuOpen(false);
+  };
+
+  const handleNativeShare = async () => {
+    if (!navigator.share) {
+      setShareMenuOpen((v) => !v);
+      return;
+    }
+    try {
+      await navigator.share({
+        title: product?.name || 'Product',
+        text: `Check this out: ${product?.name || 'Product'}`,
+        url: getShareUrl(),
+      });
+    } catch (error) {
+      // User cancelled share; no action needed.
+      if (error?.name !== 'AbortError') {
+        console.error('Native share failed:', error);
+      }
+    }
   };
 
   if (loading) {
@@ -477,9 +575,73 @@ const ProductDetail = () => {
                   <FaHeart className={isInWishlist(product.id) ? 'fill-current' : ''} />
                   {isInWishlist(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
                 </Button>
-                <Button variant="outline" size="lg">
-                  <FaShare />
-                </Button>
+                <div className="relative" ref={shareMenuRef}>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleNativeShare}
+                    aria-expanded={shareMenuOpen}
+                    aria-haspopup="menu"
+                    aria-label="Share product"
+                  >
+                    <FaShare />
+                  </Button>
+                  {shareMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg z-30 p-2"
+                      role="menu"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openShareWindow('facebook')}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-50"
+                        role="menuitem"
+                      >
+                        <FaFacebookF className="text-blue-600" />
+                        Share to Facebook
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openShareWindow('messenger')}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-50"
+                        role="menuitem"
+                      >
+                        <FaFacebookMessenger className="text-blue-500" />
+                        Share to Messenger
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openShareWindow('x')}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-50"
+                        role="menuitem"
+                      >
+                        <FaTwitter className="text-gray-900" />
+                        Share to X
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openShareWindow('whatsapp')}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-50"
+                        role="menuitem"
+                      >
+                        <FaWhatsapp className="text-green-600" />
+                        Share to WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={copyShareLink}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-left text-sm text-gray-700 hover:bg-gray-50"
+                        role="menuitem"
+                      >
+                        <FaLink className="text-gray-500" />
+                        Copy link
+                      </button>
+                      {copyMessage && (
+                        <p className="px-3 pt-1 text-xs text-green-600">{copyMessage}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Delivery Info */}
