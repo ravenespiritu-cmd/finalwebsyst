@@ -64,27 +64,27 @@ To understand how the frontend, backend, and the order pipeline fit together, se
 
 
 
-## Production setup (Vercel + Railway)
+## Production setup (Railway)
 
-For **login, register, and product images** to work when the frontend is on Vercel and the backend on Railway, set these environment variables.
+For **login, register, and product images** to work in production, set these environment variables for your Railway services.
 
-### Vercel (frontend)
+### Railway (frontend service)
 
-1. Open your project on [Vercel](https://vercel.com) → **Settings** → **Environment Variables**.
+1. In your Railway project, open the **frontend service** → **Variables**.
 2. Add:
    - **Name:** `VITE_API_URL`  
    - **Value:** Your Railway backend API URL, e.g. `https://your-app.up.railway.app/api/v1`  
-     (Use the **public URL** of your Railway service, then add `/api/v1`.)
-3. **Redeploy** the frontend so the new variable is applied. The build writes it into `public/config.json`, and the app loads that at startup.
+     (Use the **public URL** of your backend service, then add `/api/v1`.)
+3. **Redeploy** the frontend service so the new variable is applied. The build writes it into `public/config.json`, and the app loads that at startup.
 
 Without `VITE_API_URL` pointing to your Railway backend (e.g. `https://websystemprojectf-production.up.railway.app/api/v1`), the site will call the wrong API and login/register will fail and products won’t load.
 
-### Railway (backend)
+### Railway (backend service)
 
 1. In your Railway project, open the **backend (app) service** → **Variables**.
 2. Set:
    - **APP_URL** = your Railway public URL, e.g. `https://your-app.up.railway.app`
-   - **FRONTEND_URL** = your Vercel URL, e.g. `https://websystemprojectf.vercel.app`  
+   - **FRONTEND_URL** = your Railway frontend URL, e.g. `https://your-frontend.up.railway.app`  
      (Required for CORS and OAuth redirects.)
    - **APP_DEBUG** = `false` in production (so DB/stack traces are not sent to the frontend).
 3. **Database (fix "Connection refused"):** The app must reach Railway’s MySQL with the **correct host and port** (not `127.0.0.1`). Recommended:
@@ -111,7 +111,7 @@ The Dockerfile copies `backend` into the image, so the app runs correctly.
 
 ### Seeing "0 products" or no product images?
 
-- **If the Products page shows a red error** (e.g. "Could not load products"): the frontend can’t reach the backend. Check that `VITE_API_URL` on Vercel is your Railway URL + `/api/v1`, that the Railway service is running, and that you redeployed the frontend after changing env vars.
+- **If the Products page shows a red error** (e.g. "Could not load products"): the frontend can’t reach the backend. Check that `VITE_API_URL` on your Railway frontend service is your Railway backend URL + `/api/v1`, that the backend service is running, and that you redeployed the frontend after changing env vars.
 - **If it says "No products found" with no error**: the database has no products yet. The deploy runs `php artisan migrate --force` and `php artisan db:seed --force` on startup. If the DB was created later or the seed failed, run the seeder manually on Railway:
   1. In Railway, open your backend service.
   2. Use **Settings** → run a one-off command, or open the **Deployments** tab and use the **⋮** menu on a deployment to run a command in the container.
