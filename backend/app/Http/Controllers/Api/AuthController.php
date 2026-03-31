@@ -66,6 +66,14 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (!$token = JWTAuth::attempt($credentials)) {
+            $existing = User::where('email', $request->input('email'))->first();
+            if ($existing && !empty($existing->google_id)) {
+                return $this->errorResponse(
+                    'This email is set up with Google sign-in. Use Continue with Google, or Forgot password to set a password for email login.',
+                    401
+                );
+            }
+
             return $this->errorResponse('Invalid credentials', 401);
         }
 

@@ -9,7 +9,10 @@ async function init() {
     const r = await fetch('/config.json')
     const c = await r.json()
     if (c?.apiUrl) {
-      const url = String(c.apiUrl).replace(/\/$/, '')
+      let url = String(c.apiUrl).replace(/\/$/, '')
+      if (/\/api\/auth$/i.test(url)) {
+        url = url.replace(/\/api\/auth$/i, '/api/v1')
+      }
       const pointsToLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\b/i.test(url)
       const host = typeof window !== 'undefined' ? window.location.hostname : ''
       const onDeployedSite = host && !/^(localhost|127\.0\.0\.1)$/i.test(host)
