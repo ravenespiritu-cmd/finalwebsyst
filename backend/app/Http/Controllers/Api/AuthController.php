@@ -199,13 +199,16 @@ class AuthController extends Controller
         try {
             $status = Password::sendResetLink($request->only('email'));
         } catch (\Throwable $e) {
+            $raw = trim((string) $e->getMessage());
+            $safe = preg_replace('/([A-Za-z0-9+\/=]{24,})/', '[redacted]', $raw);
+            $safe = substr($safe, 0, 220);
             Log::error('forgot_password_mail_failed', [
                 'message' => $e->getMessage(),
                 'email' => $request->input('email'),
             ]);
 
             return $this->errorResponse(
-                'We could not send the reset email. Ask your administrator to configure outgoing mail on the server (MAIL_MAILER, MAIL_HOST, etc.), for example SMTP or Resend.',
+                'Mail send failed: ' . ($safe ?: 'Unknown transport error') . '. Check MAIL_* vars and Brevo sender/domain authorization.',
                 503
             );
         }
