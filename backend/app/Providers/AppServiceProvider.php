@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->ensureDatabaseUrlForRailway();
+
+        // Railway (and other HTTPS terminators) forward requests as HTTP; force https:// for url() / asset URLs
+        // so storage links are not http:// (mixed content on the SPA).
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         // Password reset link should point to the frontend SPA
         ResetPassword::createUrlUsing(function ($notifiable, $token) {

@@ -10,6 +10,31 @@ const getApiBaseURL = () => {
 };
 
 /**
+ * If the SPA is on HTTPS, upgrade http:// links to our API host to https:// (mixed content).
+ */
+function upgradeHttpForApiHost(absUrl) {
+  if (!absUrl || typeof absUrl !== 'string' || !/^http:\/\//i.test(absUrl)) {
+    return absUrl;
+  }
+  let apiHost = '';
+  try {
+    apiHost = new URL(getApiOrigin()).hostname;
+  } catch {
+    return absUrl;
+  }
+  let urlHost = '';
+  try {
+    urlHost = new URL(absUrl).hostname;
+  } catch {
+    return absUrl;
+  }
+  if (apiHost && urlHost && urlHost.toLowerCase() === apiHost.toLowerCase()) {
+    return `https://${absUrl.slice(7)}`;
+  }
+  return absUrl;
+}
+
+/**
  * Get the API origin (base URL without /api/v1) for building absolute image URLs.
  */
 export function getApiOrigin() {
@@ -42,7 +67,7 @@ export function toAbsoluteImageUrl(url, fallback = PLACEHOLDER_PRODUCT) {
   if (!url || typeof url !== 'string') return fallback;
   const trimmed = url.trim();
   if (!trimmed) return fallback;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return upgradeHttpForApiHost(trimmed);
   if (/^blob:/i.test(trimmed)) return trimmed;
   const pathForServe = trimmed.startsWith('/storage/') ? trimmed.slice(9) : trimmed;
   const pathNorm = pathForServe.startsWith('/') ? pathForServe.slice(1) : pathForServe;

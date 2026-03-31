@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -65,6 +66,26 @@ class Product extends Model
     /**
      * Boot the model.
      */
+    /**
+     * Normalize legacy http:// media URLs to https:// for this app host (avoids mixed content when APP_URL was http).
+     */
+    public static function normalizeAppMediaUrl(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+        if (! str_starts_with($value, 'http://')) {
+            return $value;
+        }
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $urlHost = parse_url($value, PHP_URL_HOST);
+        if ($appHost && $urlHost && strcasecmp((string) $appHost, (string) $urlHost) === 0) {
+            return 'https://'.substr($value, 7);
+        }
+
+        return $value;
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -77,6 +98,13 @@ class Product extends Model
                 $product->sku = strtoupper(Str::random(8));
             }
         });
+    }
+
+    protected function thumbnail(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => static::normalizeAppMediaUrl($value),
+        );
     }
 
     /**
