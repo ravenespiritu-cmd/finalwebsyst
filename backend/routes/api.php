@@ -61,6 +61,12 @@ Route::prefix('v1')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::get('/auth/providers', [AuthController::class, 'authProviders']);
+    /** Copy `google_redirect_uri` into Google Cloud → OAuth client → Authorized redirect URIs (exact match). */
+    Route::get('/auth/google/expected-redirect', function () {
+        return response()->json([
+            'google_redirect_uri' => config('services.google.redirect'),
+        ]);
+    });
     Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
     Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
