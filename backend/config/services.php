@@ -25,4 +25,10 @@ return [
             ?: (rtrim((string) (env('APP_URL') ?: 'http://localhost'), '/') . '/api/v1/auth/google/callback'),
     ],
 
+    'paymongo' => [
+        'base_url' => env('PAYMONGO_BASE_URL', 'https://api.paymongo.com/v1'),
+        'secret_key' => env('PAYMONGO_SECRET_KEY'),
+        'verify_ssl' => env('PAYMONGO_VERIFY_SSL', true),
+    ],
+
 ];

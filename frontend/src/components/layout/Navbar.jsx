@@ -207,18 +207,18 @@ const Navbar = () => {
             {/* Wishlist & Cart - hide for suppliers */}
             {isAuthenticated && !isSupplier && (
               <>
-                <Link to="/wishlist" className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative hidden sm:block">
+                <Link to="/wishlist" className="relative hidden sm:inline-flex h-9 w-9 items-center justify-center text-gray-600 hover:text-primary-600 transition-colors">
                   <FaHeart className="w-5 h-5" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 bg-primary-500 text-white text-[10px] rounded-full flex items-center justify-center leading-none">
                       {wishlistCount > 9 ? '9+' : wishlistCount}
                     </span>
                   )}
                 </Link>
-                <Link to="/cart" className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative">
+                <Link to="/cart" className="relative inline-flex h-9 w-9 items-center justify-center text-gray-600 hover:text-primary-600 transition-colors">
                   <FaShoppingCart className="w-5 h-5" />
                   {itemsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justifyCenter">
+                    <span className="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 bg-primary-500 text-white text-[10px] rounded-full flex items-center justify-center leading-none">
                       {itemsCount > 9 ? '9+' : itemsCount}
                     </span>
                   )}

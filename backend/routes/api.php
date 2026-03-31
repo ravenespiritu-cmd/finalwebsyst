@@ -119,6 +119,7 @@ Route::prefix('v1')->group(function () {
 
     // Payment methods
     Route::get('/payments/methods', [PaymentController::class, 'methods']);
+    Route::post('/payments/paymongo/webhook', [PaymentController::class, 'paymongoWebhook']);
 
     // Protected routes
     Route::middleware('jwt.auth')->group(function () {

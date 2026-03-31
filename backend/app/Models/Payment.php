@@ -98,11 +98,8 @@ class Payment extends Model
     public static function getPaymentMethods(): array
     {
         return [
-            self::METHOD_CREDIT_CARD => 'Credit Card',
             self::METHOD_GCASH => 'GCash',
-            self::METHOD_MAYA => 'Maya',
             self::METHOD_COD => 'Cash on Delivery',
-            self::METHOD_BANK_TRANSFER => 'Bank Transfer',
         ];
     }
 }

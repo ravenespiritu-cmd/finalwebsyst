@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FaCreditCard, FaMoneyBill, FaMobile, FaCheckCircle, FaHome, FaBriefcase, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaMoneyBill, FaMobile, FaCheckCircle, FaHome, FaBriefcase, FaMapMarkerAlt } from 'react-icons/fa';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ordersAPI, paymentsAPI, addressesAPI, cartAPI } from '../services/api';
+import { ordersAPI, addressesAPI, cartAPI, paymentsAPI } from '../services/api';
 import { toAbsoluteImageUrl, PLACEHOLDER_PRODUCT } from '../utils/imageUrl';
 import { formatShadeOptionLabel } from '../utils/productShades';
 import { reverseGeocode } from '../utils/geocode';
@@ -17,23 +17,6 @@ import MapPinPicker from '../components/checkout/MapPinPicker';
 const PAYMENT_STEP = 'checkout';
 const PAYMENT_FORM_STEP = 'payment';
 
-// Luhn algorithm for card validation
-const luhnCheck = (value) => {
-  const digits = value.replace(/\D/g, '');
-  let sum = 0;
-  let isEven = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let digit = parseInt(digits[i], 10);
-    if (isEven) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    isEven = !isEven;
-  }
-  return sum % 10 === 0;
-};
-
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, items, clearCart, loading: cartLoading } = useCart();
@@ -41,7 +24,12 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [step, setStep] = useState(PAYMENT_STEP);
-  const [checkoutData, setCheckoutData] = useState(null); // For GCash/Maya/Card: shipping info before payment (order not created until payment)
+  const [checkoutData, setCheckoutData] = useState(null); // For GCash: shipping info before payment (order not created until payment)
+  const [gcashQrImageUrl, setGcashQrImageUrl] = useState('');
+  const [gcashReceiverName, setGcashReceiverName] = useState('Ganda Hub Cosmetics');
+  const [gcashReceiverNumber, setGcashReceiverNumber] = useState('');
+  const [gcashOrderId, setGcashOrderId] = useState(null);
+  const [creatingGcashOrder, setCreatingGcashOrder] = useState(false);
 
   const {
     register,
@@ -158,17 +146,9 @@ const Checkout = () => {
 
   const paymentForm = useForm({
     defaultValues: {
-      // Credit card
-      card_number: '',
-      cardholder_name: '',
-      card_expiry: '',
-      card_cvv: '',
       // GCash
       gcash_number: '',
       gcash_name: '',
-      // Maya
-      maya_number: '',
-      maya_name: '',
     },
   });
 
@@ -182,14 +162,12 @@ const Checkout = () => {
   const paymentMethods = [
     { id: 'cod', name: 'Cash on Delivery', icon: FaMoneyBill, description: 'Pay when you receive' },
     { id: 'gcash', name: 'GCash', icon: FaMobile, description: 'Pay via GCash' },
-    { id: 'maya', name: 'Maya', icon: FaMobile, description: 'Pay via Maya' },
-    { id: 'credit_card', name: 'Credit Card', icon: FaCreditCard, description: 'Visa, Mastercard' },
   ];
 
   const onSubmit = async (data) => {
     // Use payment_method from form data (submit-time value), not state - avoids race where state hasn't updated yet
     const method = data.payment_method || paymentMethod;
-    const needsPaymentStep = ['gcash', 'maya', 'credit_card'].includes(method);
+    const needsPaymentStep = ['gcash'].includes(method);
     // Prefer fresh cart from API; fall back to context if API fails (e.g. network issue)
     let latestItems = [];
     try {
@@ -262,44 +240,6 @@ const Checkout = () => {
     }
   };
 
-  const onPaymentSubmit = async (data) => {
-    if (!checkoutData) return;
-    try {
-      setLoading(true);
-      const payload = {
-        ...checkoutData,
-        payment_method: paymentMethod,
-        ...(paymentMethod === 'credit_card' && {
-          card_number: data.card_number.replace(/\s/g, ''),
-          cardholder_name: data.cardholder_name,
-          card_expiry: data.card_expiry,
-          card_cvv: data.card_cvv,
-        }),
-        ...(paymentMethod === 'gcash' && {
-          gcash_number: data.gcash_number?.replace(/\s/g, ''),
-          gcash_name: data.gcash_name,
-        }),
-        ...(paymentMethod === 'maya' && {
-          maya_number: data.maya_number?.replace(/\s/g, ''),
-          maya_name: data.maya_name,
-        }),
-      };
-      const response = await ordersAPI.placeWithPayment(payload);
-      const order = response.data.data;
-      toast.success('Payment successful!');
-      clearCart();
-      setCheckoutData(null);
-      navigate(`/orders/${order.id}`);
-    } catch (error) {
-      const message = error.response?.data?.message || error.response?.data?.errors
-        ? Object.values(error.response.data.errors || {}).flat().join(' ')
-        : 'Payment failed';
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (cartLoading) {
     return <Loading fullScreen />;
   }
@@ -309,14 +249,95 @@ const Checkout = () => {
     return null;
   }
 
-  // Payment form step (for GCash, Maya, Credit Card) - order not created until payment is submitted
+  useEffect(() => {
+    if (step !== PAYMENT_FORM_STEP || paymentMethod !== 'gcash') return;
+    let cancelled = false;
+    const loadGcashSettings = async () => {
+      try {
+        const methodsRes = await paymentsAPI.getMethods();
+        const gcash = methodsRes?.data?.data?.gcash || {};
+        if (!cancelled) {
+          setGcashQrImageUrl(String(gcash.qr_image_url || '').trim());
+          setGcashReceiverName(String(gcash.receiver_name || 'Ganda Hub Cosmetics'));
+          setGcashReceiverNumber(String(gcash.receiver_number || '').trim());
+        }
+      } catch (_) {
+        if (!cancelled) {
+          setGcashQrImageUrl('');
+        }
+      }
+    };
+
+    loadGcashSettings();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, paymentMethod]);
+
+  // Auto-create GCash order once user reaches QR step (no "I have paid" button).
+  useEffect(() => {
+    if (step !== PAYMENT_FORM_STEP || paymentMethod !== 'gcash' || !checkoutData || gcashOrderId || creatingGcashOrder) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setCreatingGcashOrder(true);
+        const payload = {
+          ...checkoutData,
+          payment_method: 'gcash',
+        };
+        const response = await ordersAPI.create(payload);
+        const order = response?.data?.data;
+        if (!cancelled && order?.id) {
+          setGcashOrderId(order.id);
+          toast.info('Order created. Waiting for payment confirmation...');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error.response?.data?.message || 'Failed to prepare GCash order';
+          toast.error(message);
+        }
+      } finally {
+        if (!cancelled) setCreatingGcashOrder(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, paymentMethod, checkoutData, gcashOrderId, creatingGcashOrder]);
+
+  // Auto-continue when payment is confirmed.
+  useEffect(() => {
+    if (!gcashOrderId) return;
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        const res = await ordersAPI.getOne(gcashOrderId);
+        const order = res?.data?.data;
+        const paymentStatus = String(order?.payment?.status || '').toLowerCase();
+        const orderStatus = String(order?.status || '').toLowerCase();
+        const isPaid = paymentStatus === 'completed' || ['confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered'].includes(orderStatus);
+        if (!cancelled && isPaid) {
+          toast.success('Payment confirmed. Continuing...');
+          clearCart();
+          setCheckoutData(null);
+          setGcashOrderId(null);
+          navigate(`/orders/${order.id}`);
+        }
+      } catch (_) {}
+    };
+    checkStatus();
+    const id = setInterval(checkStatus, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [gcashOrderId, clearCart, navigate]);
+
   if (step === PAYMENT_FORM_STEP && checkoutData) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
             type="button"
-            onClick={() => { setStep(PAYMENT_STEP); setCheckoutData(null); }}
+            onClick={() => { setStep(PAYMENT_STEP); setCheckoutData(null); setGcashOrderId(null); }}
             className="text-primary-600 hover:text-primary-700 text-sm mb-4"
           >
             ← Back to checkout
@@ -326,148 +347,69 @@ const Checkout = () => {
             <h1 className="text-2xl font-display font-bold">Complete Your Payment</h1>
           </div>
           <p className="text-gray-600 mb-8">
-            Total to pay: {formatPrice(cart?.total)}
+            Scan the GCash QR below and pay the exact amount.
           </p>
 
-          <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)}>
-            <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
               <h2 className="text-lg font-semibold text-gray-800">
-                {paymentMethod === 'credit_card' && 'Credit Card Details'}
                 {paymentMethod === 'gcash' && 'GCash Payment'}
-                {paymentMethod === 'maya' && 'Maya Payment'}
               </h2>
 
-              {/* Credit Card */}
-              {paymentMethod === 'credit_card' && (
-                <div className="space-y-4">
-                  <Input
-                    label="Card Number"
-                    placeholder="4242 4242 4242 4242"
-                    error={paymentForm.formState.errors.card_number?.message}
-                    {...paymentForm.register('card_number', {
-                      required: 'Card number is required',
-                      validate: (v) => {
-                        const digits = v.replace(/\s/g, '');
-                        if (digits.length < 13 || digits.length > 19) return 'Card number must be 13-19 digits';
-                        if (!/^\d+$/.test(digits)) return 'Card number must contain only digits';
-                        if (!luhnCheck(v)) return 'Invalid card number';
-                        return true;
-                      },
-                    })}
-                  />
-                  <Input
-                    label="Cardholder Name"
-                    placeholder="Name as shown on card"
-                    error={paymentForm.formState.errors.cardholder_name?.message}
-                    {...paymentForm.register('cardholder_name', {
-                      required: 'Cardholder name is required',
-                      minLength: { value: 2, message: 'Enter the full name on the card' },
-                    })}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Expiry Date (MM/YY)"
-                      placeholder="12/28"
-                      error={paymentForm.formState.errors.card_expiry?.message}
-                      {...paymentForm.register('card_expiry', {
-                        required: 'Expiry date is required',
-                        pattern: {
-                          value: /^(0[1-9]|1[0-2])\/([0-9]{2})$/,
-                          message: 'Use MM/YY format (e.g. 12/28)',
-                        },
-                        validate: (v) => {
-                          const [mm, yy] = v.split('/');
-                          const exp = new Date(2000 + parseInt(yy), parseInt(mm) - 1);
-                          if (exp < new Date()) return 'Card has expired';
-                          return true;
-                        },
-                      })}
-                    />
-                    <Input
-                      label="CVV / Security Code"
-                      type="password"
-                      placeholder="123"
-                      maxLength={4}
-                      error={paymentForm.formState.errors.card_cvv?.message}
-                      {...paymentForm.register('card_cvv', {
-                        required: 'CVV is required',
-                        pattern: {
-                          value: /^\d{3,4}$/,
-                          message: 'CVV must be 3 or 4 digits',
-                        },
-                      })}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">CVV is the 3 or 4-digit code on the back of your card.</p>
-                </div>
-              )}
-
-              {/* GCash - Real requirements: Registered mobile number, Name as registered in GCash */}
+              {/* Direct GCash QR payment (no PayMongo redirect) */}
               {paymentMethod === 'gcash' && (
                 <div className="space-y-4">
-                  <Input
-                    label="GCash-Registered Mobile Number"
-                    placeholder="0917 123 4567"
-                    error={paymentForm.formState.errors.gcash_number?.message}
-                    {...paymentForm.register('gcash_number', {
-                      required: 'Mobile number is required',
-                      validate: (v) => /^09\d{9}$/.test((v || '').replace(/\s/g, '')) || 'Enter 11-digit number starting with 09 (e.g. 0917 123 4567)',
-                    })}
-                  />
-                  <Input
-                    label="Full Name (as registered in GCash)"
-                    placeholder="Juan Dela Cruz"
-                    error={paymentForm.formState.errors.gcash_name?.message}
-                    {...paymentForm.register('gcash_name', {
-                      required: 'Name is required for verification',
-                      minLength: { value: 2, message: 'Enter your full name as registered in GCash' },
-                    })}
-                  />
-                  <p className="text-sm text-gray-600">
-                    You will receive a payment request on your GCash app. Name must match your GCash registration.
-                  </p>
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    {!gcashQrImageUrl ? (
+                      <>
+                        <p className="text-sm text-gray-700">
+                          Pay amount: <span className="font-semibold">{formatPrice(cart?.total)}</span>
+                        </p>
+                        <p className="text-sm text-red-600 mt-2">
+                          GCash QR is not configured yet. Ask admin to set `gcash_qr_image_url` in Settings.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-700 mb-3">
+                          Open your GCash app and scan this merchant QR to pay.
+                        </p>
+                        <div className="flex justify-center my-3">
+                          <img
+                            src={gcashQrImageUrl}
+                            alt="GCash QR"
+                            className="w-64 h-64 rounded-lg border border-gray-200 bg-white p-2"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          Receiver: <span className="font-semibold">{gcashReceiverName}</span>
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          Number: <span className="font-semibold">{gcashReceiverNumber || '-'}</span>
+                        </p>
+                        <p className="text-sm text-gray-700 mt-2">
+                          Amount: <span className="font-semibold">{formatPrice(cart?.total)}</span>
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Maya - Real requirements: Registered mobile number, Name as registered in Maya */}
-              {paymentMethod === 'maya' && (
-                <div className="space-y-4">
-                  <Input
-                    label="Maya-Registered Mobile Number"
-                    placeholder="0917 123 4567"
-                    error={paymentForm.formState.errors.maya_number?.message}
-                    {...paymentForm.register('maya_number', {
-                      required: 'Mobile number is required',
-                      validate: (v) => /^09\d{9}$/.test((v || '').replace(/\s/g, '')) || 'Enter 11-digit number starting with 09 (e.g. 0917 123 4567)',
-                    })}
-                  />
-                  <Input
-                    label="Full Name (as registered in Maya)"
-                    placeholder="Juan Dela Cruz"
-                    error={paymentForm.formState.errors.maya_name?.message}
-                    {...paymentForm.register('maya_name', {
-                      required: 'Name is required for verification',
-                      minLength: { value: 2, message: 'Enter your full name as registered in Maya' },
-                    })}
-                  />
-                  <p className="text-sm text-gray-600">
-                    You will receive a payment request on your Maya app. Name must match your Maya registration.
-                  </p>
-                </div>
+              {gcashQrImageUrl ? (
+                <p className="text-sm text-center text-gray-600">
+                  {creatingGcashOrder
+                    ? 'Preparing your order...'
+                    : gcashOrderId
+                      ? 'Waiting for payment confirmation... This will continue automatically.'
+                      : 'Initializing payment...'}
+                </p>
+              ) : (
+                <p className="text-sm text-center text-gray-600">
+                  Configure GCash QR first in admin settings.
+                </p>
               )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                size="lg"
-                loading={loading}
-              >
-                Pay {formatPrice(cart?.total)}
-              </Button>
             </div>
-          </form>
-        </div>
+          </div>
       </div>
     );
   }
@@ -574,7 +516,7 @@ const Checkout = () => {
                   <Input
                     label="Email"
                     type="email"
-                    placeholder="cyven@example.com"
+                    placeholder="Enter your email address"
                     error={errors.shipping_email?.message}
                     {...register('shipping_email', {
                       required: 'Email is required',
@@ -805,7 +747,7 @@ const Checkout = () => {
                   className="mt-6"
                   loading={loading}
                 >
-                  {['gcash', 'maya', 'credit_card'].includes(paymentMethod) ? 'Continue to Payment' : 'Place Order'}
+                  {['gcash'].includes(paymentMethod) ? 'Continue to Payment' : 'Place Order'}
                 </Button>
 
                 <p className="text-xs text-gray-500 text-center mt-4">

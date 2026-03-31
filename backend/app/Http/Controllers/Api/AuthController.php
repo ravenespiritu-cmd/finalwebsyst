@@ -139,6 +139,7 @@ class AuthController extends Controller
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'gcash_number' => 'nullable|string|regex:/^09\d{9}$/',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',
@@ -151,7 +152,7 @@ class AuthController extends Controller
         }
 
         $user->update($request->only([
-            'first_name', 'last_name', 'phone', 'address',
+            'first_name', 'last_name', 'phone', 'gcash_number', 'address',
             'city', 'state', 'zip_code', 'country'
         ]));
 

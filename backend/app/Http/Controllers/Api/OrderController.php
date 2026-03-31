@@ -11,10 +11,10 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\PayMongoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -124,7 +124,7 @@ class OrderController extends Controller
             'billing_state' => 'nullable|string|max:255',
             'billing_zip_code' => 'nullable|string|max:20',
             'billing_country' => 'nullable|string|max:255',
-            'payment_method' => 'required|in:credit_card,gcash,maya,cod,bank_transfer',
+            'payment_method' => 'required|in:gcash,cod',
             'notes' => 'nullable|string',
         ]);
 
@@ -213,7 +213,7 @@ class OrderController extends Controller
                 'status' => Delivery::STATUS_PENDING,
             ]);
 
-            // Clear cart only for COD (pay on delivery). For GCash/Maya/Credit Card, keep cart until payment completes so user can go back and edit.
+            // Clear cart only for COD (pay on delivery). For GCash, keep cart until payment completes.
             if ($request->payment_method === 'cod') {
                 $cart->clear();
             }
@@ -232,7 +232,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Create order and process payment in one step (GCash, Maya, Credit Card).
+     * Create order and process payment in one step (GCash).
      * Only creates the order when payment succeeds - no pending orders from abandoned checkouts.
      */
     public function storeWithPayment(Request $request)
@@ -254,28 +254,12 @@ class OrderController extends Controller
             'billing_state' => 'nullable|string|max:255',
             'billing_zip_code' => 'nullable|string|max:20',
             'billing_country' => 'nullable|string|max:255',
-            'payment_method' => 'required|in:credit_card,gcash,maya',
+            'payment_method' => 'required|in:gcash',
             'notes' => 'nullable|string',
-            'card_number' => 'required_if:payment_method,credit_card|string|regex:/^\d{13,19}$/',
-            'cardholder_name' => 'required_if:payment_method,credit_card|string|min:2',
-            'card_expiry' => 'required_if:payment_method,credit_card|string|regex:/^(0[1-9]|1[0-2])\/\d{2}$/',
-            'card_cvv' => 'required_if:payment_method,credit_card|string|regex:/^\d{3,4}$/',
-            'gcash_number' => 'required_if:payment_method,gcash|string|regex:/^09\d{9}$/',
-            'gcash_name' => 'required_if:payment_method,gcash|string|min:2',
-            'maya_number' => 'required_if:payment_method,maya|string|regex:/^09\d{9}$/',
-            'maya_name' => 'required_if:payment_method,maya|string|min:2',
         ]);
 
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', 422, $validator->errors());
-        }
-
-        if ($request->payment_method === 'credit_card' && $request->card_expiry) {
-            [$month, $year] = explode('/', $request->card_expiry);
-            $expiryDate = \Carbon\Carbon::createFromDate(2000 + (int) $year, (int) $month, 1)->endOfMonth();
-            if ($expiryDate->isPast()) {
-                return $this->errorResponse('Card has expired', 422);
-            }
         }
 
         $user = auth()->user();
@@ -297,6 +281,12 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
+            $payMongo = app(PayMongoService::class);
+            if (!$payMongo->isConfigured()) {
+                DB::rollBack();
+                return $this->errorResponse('PayMongo is not configured yet. Please contact admin.', 422);
+            }
+
             $order = Order::create([
                 'user_id' => $user->id,
                 'status' => Order::STATUS_PENDING,
@@ -343,6 +333,7 @@ class OrderController extends Controller
                 'payment_method' => $request->payment_method,
                 'amount' => $cart->total,
                 'status' => Payment::STATUS_PROCESSING,
+                'payment_details' => [],
             ]);
 
             Delivery::create([
@@ -350,16 +341,58 @@ class OrderController extends Controller
                 'status' => Delivery::STATUS_PENDING,
             ]);
 
-            $transactionId = 'TXN-' . strtoupper(Str::random(12));
-            $payment->markAsCompleted($transactionId);
-            $order->updateStatus(Order::STATUS_CONFIRMED);
-            $cart->clear();
+            $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/');
+            $checkoutSession = $payMongo->createCheckoutSession([
+                'billing' => [
+                    'name' => trim($request->shipping_first_name . ' ' . $request->shipping_last_name),
+                    'email' => $request->shipping_email,
+                    'phone' => $request->shipping_phone,
+                ],
+                'send_email_receipt' => false,
+                'show_description' => true,
+                'show_line_items' => true,
+                'line_items' => [[
+                    'currency' => 'PHP',
+                    'amount' => (int) round(((float) $cart->total) * 100),
+                    'name' => 'Order ' . $order->order_number,
+                    'quantity' => 1,
+                    'description' => 'Payment for order ' . $order->order_number,
+                ]],
+                'payment_method_types' => ['gcash'],
+                'description' => 'Payment for order ' . $order->order_number,
+                'statement_descriptor' => 'GANDA HUB',
+                'reference_number' => (string) $order->order_number,
+                'success_url' => $frontendUrl . '/orders/' . $order->id . '?payment=success',
+                'cancel_url' => $frontendUrl . '/checkout?payment=cancelled',
+                'metadata' => [
+                    'order_id' => (string) $order->id,
+                    'payment_id' => (string) $payment->id,
+                    'user_id' => (string) $user->id,
+                ],
+            ]);
+
+            $sessionId = data_get($checkoutSession, 'data.id');
+            $checkoutUrl = data_get($checkoutSession, 'data.attributes.checkout_url');
+            if (!$sessionId || !$checkoutUrl) {
+                throw new \RuntimeException('PayMongo did not return checkout session details.');
+            }
+
+            $payment->update([
+                'payment_details' => [
+                    'provider' => 'paymongo',
+                    'checkout_session_id' => $sessionId,
+                    'checkout_url' => $checkoutUrl,
+                ],
+                'transaction_id' => $sessionId,
+            ]);
 
             DB::commit();
 
-            $order->load(['items', 'payment', 'delivery']);
-            $this->sendSupplierThankYouMessages($order);
-            return $this->successResponse($order, 'Order placed and payment successful', 201);
+            return $this->successResponse([
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'checkout_url' => $checkoutUrl,
+            ], 'Redirecting to secure payment', 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->errorResponse('Failed to place order: ' . $e->getMessage(), 500);

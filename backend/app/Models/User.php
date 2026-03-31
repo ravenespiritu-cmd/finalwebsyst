@@ -24,6 +24,8 @@ class User extends Authenticatable implements JWTSubject
         'google_id',
         'password',
         'phone',
+        'gcash_number',
+        'gcash_balance',
         'address',
         'city',
         'state',
@@ -51,6 +53,7 @@ class User extends Authenticatable implements JWTSubject
         'last_login_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'gcash_balance' => 'decimal:2',
     ];
 
     /**

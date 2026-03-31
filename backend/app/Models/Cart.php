@@ -59,7 +59,11 @@ class Cart extends Model
     {
         $subtotal = $this->items->sum('total_price');
         $tax = $subtotal * 0.12; // 12% VAT
-        $shipping = $subtotal >= 1500 ? 0 : 150; // Free shipping over 1500
+        $freeShippingThresholdSetting = SystemSetting::get('free_shipping_threshold', 1500);
+        $defaultShippingFeeSetting = SystemSetting::get('default_shipping_fee', 150);
+        $freeShippingThreshold = is_numeric($freeShippingThresholdSetting) ? (float) $freeShippingThresholdSetting : 1500;
+        $defaultShippingFee = is_numeric($defaultShippingFeeSetting) ? (float) $defaultShippingFeeSetting : 150;
+        $shipping = $subtotal >= $freeShippingThreshold ? 0 : $defaultShippingFee;
         $total = $subtotal + $tax + $shipping - $this->discount;
 
         $this->update([

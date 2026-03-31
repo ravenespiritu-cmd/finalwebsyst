@@ -102,7 +102,7 @@ const Payments = () => {
   };
 
   const statuses = ['pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'];
-  const methods = ['cod', 'gcash', 'maya', 'credit_card', 'bank_transfer'];
+  const methods = ['cod', 'gcash'];
 
   return (
     <div>

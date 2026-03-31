@@ -43,6 +43,7 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->getCart();
+        $cart->calculateTotals();
         $cart->load('items.product');
 
         return $this->successResponse([

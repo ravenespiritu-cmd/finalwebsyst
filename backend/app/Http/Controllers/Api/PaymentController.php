@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\SystemSetting;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -86,40 +90,51 @@ class PaymentController extends Controller
             return $this->errorResponse('Payment already completed', 400);
         }
 
-        // Mock payment processing - real-world requirements per payment method
+        // Payment processing - only GCash is supported for online payment
         $validator = Validator::make($request->all(), [
-            // Credit Card: card number, cardholder name, expiry, CVV (as required by merchants)
-            'card_number' => 'required_if:payment_method,credit_card|string|regex:/^\d{13,19}$/',
-            'cardholder_name' => 'required_if:payment_method,credit_card|string|min:2',
-            'card_expiry' => 'required_if:payment_method,credit_card|string|regex:/^(0[1-9]|1[0-2])\/\d{2}$/',
-            'card_cvv' => 'required_if:payment_method,credit_card|string|regex:/^\d{3,4}$/',
-            // GCash: registered mobile number + name for verification (as required for Send Money/Request)
+            'payment_method' => 'required|in:gcash',
             'gcash_number' => 'required_if:payment_method,gcash|string|regex:/^09\d{9}$/',
             'gcash_name' => 'required_if:payment_method,gcash|string|min:2',
-            // Maya: registered mobile number + name for verification (as required for Maya Wallet)
-            'maya_number' => 'required_if:payment_method,maya|string|regex:/^09\d{9}$/',
-            'maya_name' => 'required_if:payment_method,maya|string|min:2',
         ]);
 
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', 422, $validator->errors());
         }
 
-        // Validate card expiry is not in the past
-        if ($request->payment_method === 'credit_card' && $request->card_expiry) {
-            [$month, $year] = explode('/', $request->card_expiry);
-            $expiryDate = \Carbon\Carbon::createFromDate(2000 + (int) $year, (int) $month, 1)->endOfMonth();
-            if ($expiryDate->isPast()) {
-                return $this->errorResponse('Card has expired', 422);
-            }
+        if ($request->payment_method !== 'gcash') {
+            return $this->errorResponse('Unsupported payment method', 422);
         }
 
-        // Simulate payment processing
-        $transactionId = 'TXN-' . strtoupper(Str::random(12));
-        $success = true; // In production, integrate with actual payment gateway
+        DB::beginTransaction();
+        try {
+            $customer = User::where('id', $user->id)->lockForUpdate()->first();
+            if (!$customer) {
+                DB::rollBack();
+                return $this->errorResponse('User not found', 404);
+            }
 
-        if ($success) {
+            $currentBalance = (float) $customer->gcash_balance;
+            $paymentAmount = (float) $payment->amount;
+            if ($currentBalance < $paymentAmount) {
+                DB::rollBack();
+                return $this->errorResponse('Insufficient GCash balance', 422);
+            }
+
+            $customer->update([
+                'gcash_balance' => round($currentBalance - $paymentAmount, 2),
+                'gcash_number' => $request->gcash_number,
+            ]);
+
+            $transactionId = 'TXN-' . strtoupper(Str::random(12));
             $payment->markAsCompleted($transactionId);
+            $payment->update([
+                'payment_details' => [
+                    'gcash_number' => $request->gcash_number,
+                    'gcash_name' => $request->gcash_name,
+                    'balance_before' => number_format($currentBalance, 2, '.', ''),
+                    'balance_after' => number_format((float) $customer->gcash_balance, 2, '.', ''),
+                ],
+            ]);
 
             // Update order status
             $order->updateStatus(Order::STATUS_CONFIRMED);
@@ -130,11 +145,13 @@ class PaymentController extends Controller
                 $userCart->clear();
             }
 
+            DB::commit();
             return $this->successResponse([
                 'payment' => $payment->fresh(),
                 'transaction_id' => $transactionId,
             ], 'Payment processed successfully');
-        } else {
+        } catch (\Throwable $e) {
+            DB::rollBack();
             $payment->markAsFailed('Payment declined');
             return $this->errorResponse('Payment failed', 400);
         }
@@ -174,7 +191,91 @@ class PaymentController extends Controller
      */
     public function methods()
     {
-        return $this->successResponse(Payment::getPaymentMethods());
+        return $this->successResponse([
+            'methods' => Payment::getPaymentMethods(),
+            'gcash' => [
+                'receiver_name' => (string) SystemSetting::get('gcash_receiver_name', 'Ganda Hub Cosmetics'),
+                'receiver_number' => (string) SystemSetting::get('gcash_receiver_number', ''),
+                'qr_image_url' => (string) SystemSetting::get('gcash_qr_image_url', ''),
+            ],
+        ]);
+    }
+
+    /**
+     * PayMongo webhook endpoint.
+     */
+    public function paymongoWebhook(Request $request)
+    {
+        $payload = $request->all();
+        $eventType = (string) data_get($payload, 'data.attributes.type', '');
+        $resourceData = data_get($payload, 'data.attributes.data', []);
+
+        // Best-effort extraction across PayMongo event payload variants.
+        $checkoutSessionId = (string) (
+            data_get($resourceData, 'id')
+            ?: data_get($resourceData, 'attributes.checkout_session_id')
+            ?: data_get($resourceData, 'attributes.source.id')
+            ?: data_get($resourceData, 'attributes.metadata.checkout_session_id')
+        );
+
+        if ($checkoutSessionId === '') {
+            Log::warning('PayMongo webhook received without checkout session id', ['payload' => $payload]);
+            return $this->successResponse(['received' => true], 'Ignored');
+        }
+
+        $payment = Payment::where('payment_details->checkout_session_id', $checkoutSessionId)->first();
+        if (!$payment) {
+            Log::warning('PayMongo webhook session not mapped to local payment', ['checkout_session_id' => $checkoutSessionId]);
+            return $this->successResponse(['received' => true], 'Ignored');
+        }
+
+        $order = $payment->order;
+        if (!$order) {
+            return $this->successResponse(['received' => true], 'Ignored');
+        }
+
+        $normalizedType = strtolower($eventType);
+        $isPaidEvent = str_contains($normalizedType, 'paid');
+        $isFailedEvent = str_contains($normalizedType, 'failed') || str_contains($normalizedType, 'expired');
+
+        if ($isPaidEvent) {
+            if ($payment->status !== Payment::STATUS_COMPLETED) {
+                $providerPaymentId = (string) (
+                    data_get($resourceData, 'attributes.payments.0.id')
+                    ?: data_get($resourceData, 'attributes.payment_intent_id')
+                    ?: $checkoutSessionId
+                );
+                $payment->markAsCompleted($providerPaymentId);
+                $payment->update([
+                    'payment_details' => array_merge($payment->payment_details ?? [], [
+                        'provider' => 'paymongo',
+                        'provider_payment_id' => $providerPaymentId,
+                        'last_webhook_event' => $eventType,
+                    ]),
+                ]);
+            }
+
+            if ($order->status !== Order::STATUS_CONFIRMED) {
+                $order->updateStatus(Order::STATUS_CONFIRMED);
+            }
+
+            $userCart = Cart::where('user_id', $order->user_id)->first();
+            if ($userCart) {
+                $userCart->clear();
+            }
+        } elseif ($isFailedEvent) {
+            if ($payment->status !== Payment::STATUS_FAILED) {
+                $payment->markAsFailed('PayMongo reported ' . $eventType);
+                $payment->update([
+                    'payment_details' => array_merge($payment->payment_details ?? [], [
+                        'provider' => 'paymongo',
+                        'last_webhook_event' => $eventType,
+                    ]),
+                ]);
+            }
+        }
+
+        return $this->successResponse(['received' => true]);
     }
 
     /**
