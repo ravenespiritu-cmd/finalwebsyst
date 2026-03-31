@@ -218,9 +218,12 @@ class AuthController extends Controller
         }
 
         if ($status === Password::RESET_LINK_SENT) {
+            $mailer = (string) config('mail.default', 'unknown');
+            $host = (string) config('mail.mailers.smtp.host', '');
+            $route = $mailer === 'smtp' ? " via SMTP ({$host})" : " via '{$mailer}' mailer";
             return $this->successResponse(
                 null,
-                'Check your email — we sent you a link to reset your password. If you do not see it, look in spam or promotions.'
+                "Check your email — we sent you a link to reset your password{$route}. If you do not see it, look in spam or promotions."
             );
         }
 
