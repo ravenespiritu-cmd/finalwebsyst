@@ -38,12 +38,12 @@ const Wishlist = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800 mb-5 sm:mb-8">My Wishlist</h1>
-        <p className="text-sm sm:text-base text-gray-600 mb-5 sm:mb-6">{items.length} item{items.length !== 1 ? 's' : ''} saved</p>
+        <h1 className="text-3xl font-display font-bold text-gray-800 mb-8">My Wishlist</h1>
+        <p className="text-gray-600 mb-6">{items.length} item{items.length !== 1 ? 's' : ''} saved</p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((product) => {
             const effectivePrice = product.sale_price || product.price;
             const isOnSale = product.sale_price && product.sale_price < product.price;
@@ -69,17 +69,17 @@ const Wishlist = () => {
                     )}
                   </div>
                 </Link>
-                <div className="p-3 sm:p-4">
+                <div className="p-4">
                   <p className="text-xs text-primary-500 font-medium uppercase tracking-wide mb-1">
                     {product.category?.name || 'Cosmetics'}
                   </p>
                   <Link to={`/products/${product.slug}`}>
-                    <h3 className="font-medium text-sm sm:text-base text-gray-800 group-hover:text-primary-600 transition-colors line-clamp-2 min-h-[40px] sm:min-h-[48px]">
+                    <h3 className="font-medium text-gray-800 group-hover:text-primary-600 transition-colors line-clamp-2 min-h-[48px]">
                       {product.name}
                     </h3>
                   </Link>
-                  <div className="mt-2.5 sm:mt-3 flex items-center gap-2">
-                    <span className="text-base sm:text-lg font-bold text-primary-600">
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-lg font-bold text-primary-600">
                       {formatPrice(effectivePrice)}
                     </span>
                     {isOnSale && (
@@ -105,7 +105,7 @@ const Wishlist = () => {
                         e.preventDefault();
                         removeFromWishlist(product.id);
                       }}
-                      className="p-1.5 sm:p-2 border border-gray-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex-shrink-0"
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors flex-shrink-0"
                       title="Remove from wishlist"
                     >
                       <FaHeart className="w-4 h-4 fill-current" />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -48,8 +48,8 @@ const ResetPassword = () => {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-8 sm:py-12 px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-5 sm:p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <h1 className="font-display text-2xl font-bold text-primary-600">Invalid reset link</h1>
           <p className="mt-4 text-gray-600">
             This link is missing or invalid. Please request a new password reset from the sign-in page.
@@ -67,14 +67,14 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
-          <div className="text-center mb-6 sm:mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-600">Ganda Hub</h1>
+              <h1 className="font-display text-3xl font-bold text-primary-600">Ganda Hub</h1>
             </Link>
-            <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-semibold text-gray-800">Set new password</h2>
+            <h2 className="mt-4 text-2xl font-semibold text-gray-800">Set new password</h2>
             <p className="mt-2 text-gray-600">
               Enter your new password below.
             </p>

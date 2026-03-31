@@ -64,7 +64,7 @@
   }
 
   .section-subtitle {
-    @apply text-gray-600 text-base sm:text-lg mb-6 sm:mb-8;
+    @apply text-gray-600 text-lg mb-8;
   }
 }
 
@@ -114,23 +114,4 @@
 
 .animate-slide-in {
   animation: slideIn 0.3s ease-out forwards;
-}
-
-/* Concise mobile tuning */
-@media (max-width: 640px) {
-  .section-title {
-    font-size: 1.5rem;
-    line-height: 2rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .card {
-    border-radius: 0.75rem;
-  }
-
-  .badge {
-    padding: 0.125rem 0.5rem;
-    font-size: 0.625rem;
-    line-height: 1rem;
-  }
 }

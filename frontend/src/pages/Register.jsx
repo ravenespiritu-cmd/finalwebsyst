@@ -41,17 +41,17 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
+          <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-600">
+              <h1 className="font-display text-3xl font-bold text-primary-600">
                 Ganda Hub
               </h1>
             </Link>
-            <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-semibold text-gray-800">
+            <h2 className="mt-4 text-2xl font-semibold text-gray-800">
               Create Account
             </h2>
             <p className="mt-2 text-gray-600">
@@ -61,7 +61,7 @@ const Register = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 label="First Name"
                 icon={FaUser}
@@ -172,7 +172,7 @@ const Register = () => {
           </form>
 
           {/* Sign In Link */}
-          <p className="mt-6 sm:mt-8 text-center text-sm sm:text-base text-gray-600">
+          <p className="mt-8 text-center text-gray-600">
             Already have an account?{' '}
             <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign in

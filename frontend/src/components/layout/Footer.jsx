@@ -33,11 +33,11 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 text-gray-300">
       {/* Newsletter Section */}
-      <div className="bg-primary-600 py-6 sm:py-8">
+      <div className="bg-primary-600 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-center md:text-left">
-              <h3 className="text-lg sm:text-xl font-semibold text-white">
+              <h3 className="text-xl font-semibold text-white">
                 Subscribe to Our Newsletter
               </h3>
               <p className="text-primary-100">
@@ -51,13 +51,13 @@ const Footer = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={submitting}
-                className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-l-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-white/30 text-gray-900 disabled:opacity-70 text-sm sm:text-base"
+                className="px-4 py-3 rounded-l-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-white/30 text-gray-900 disabled:opacity-70"
                 aria-label="Email for newsletter"
               />
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-900 text-white rounded-r-lg hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="px-6 py-3 bg-gray-900 text-white rounded-r-lg hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {submitting ? '...' : 'Subscribe'}
               </button>
@@ -67,8 +67,8 @@ const Footer = () => {
       </div>
 
       {/* Main Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <h2 className="font-display text-2xl font-bold text-white mb-4">
@@ -183,7 +183,7 @@ const Footer = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-800 py-4 sm:py-6">
+      <div className="border-t border-gray-800 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">

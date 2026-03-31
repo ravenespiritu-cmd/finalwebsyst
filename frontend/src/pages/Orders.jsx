@@ -63,9 +63,9 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800 mb-5 sm:mb-8">My Orders</h1>
+        <h1 className="text-3xl font-display font-bold text-gray-800 mb-8">My Orders</h1>
 
         {orders.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
@@ -82,8 +82,8 @@ const Orders = () => {
               {orders.map((order) => (
                 <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
                   {/* Order Header */}
-                  <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  <div className="px-6 py-4 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <div>
                         <p className="text-sm text-gray-500">Order Number</p>
                         <p className="font-semibold text-gray-800">{order.order_number}</p>
@@ -97,11 +97,11 @@ const Orders = () => {
                         <p className="font-semibold text-primary-600">{formatPrice(order.total)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-4">
                       {getStatusBadge(order.status)}
                       <Link
                         to={`/orders/${order.id}`}
-                        className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base text-primary-600 hover:text-primary-700"
+                        className="flex items-center gap-2 text-primary-600 hover:text-primary-700"
                       >
                         <FaEye />
                         View Details
@@ -110,8 +110,8 @@ const Orders = () => {
                   </div>
 
                   {/* Order Items Preview */}
-                  <div className="p-4 sm:p-6">
-                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                  <div className="p-6">
+                    <div className="flex flex-wrap gap-4">
                       {order.items?.slice(0, 4).map((item) => (
                         <div key={item.id} className="flex items-center gap-3">
                           <img

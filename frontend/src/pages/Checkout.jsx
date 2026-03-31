@@ -333,7 +333,7 @@ const Checkout = () => {
 
   if (step === PAYMENT_FORM_STEP && checkoutData) {
     return (
-      <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+      <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
             type="button"
@@ -342,15 +342,15 @@ const Checkout = () => {
           >
             ← Back to checkout
           </button>
-          <div className="flex items-center gap-2 text-green-600 mb-5 sm:mb-6">
+          <div className="flex items-center gap-2 text-green-600 mb-6">
             <FaCheckCircle className="w-6 h-6" />
-            <h1 className="text-xl sm:text-2xl font-display font-bold">Complete Your Payment</h1>
+            <h1 className="text-2xl font-display font-bold">Complete Your Payment</h1>
           </div>
-          <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
+          <p className="text-gray-600 mb-8">
             Scan the GCash QR below and pay the exact amount.
           </p>
 
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-5 sm:space-y-6">
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
               <h2 className="text-lg font-semibold text-gray-800">
                 {paymentMethod === 'gcash' && 'GCash Payment'}
               </h2>
@@ -415,17 +415,17 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800 mb-5 sm:mb-8">Checkout</h1>
+        <h1 className="text-3xl font-display font-bold text-gray-800 mb-8">Checkout</h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2 space-y-6">
               {/* Shipping Information */}
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-5 sm:mb-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-6">
                   Shipping Information
                 </h2>
 
@@ -493,7 +493,7 @@ const Checkout = () => {
                   )}
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="First Name"
                     placeholder="Cy"
@@ -512,7 +512,7 @@ const Checkout = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
+                <div className="grid grid-cols-2 gap-4 mt-4">
                   <Input
                     label="Email"
                     type="email"
@@ -547,7 +547,7 @@ const Checkout = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-3 sm:mt-4">
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <Input
                     label="City"
                     placeholder="Makati City"
@@ -617,8 +617,8 @@ const Checkout = () => {
 
               {/* Payment Method - synced to form so submit always uses current choice */}
               <input type="hidden" {...register('payment_method')} />
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-5 sm:mb-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-6">
                   Payment Method
                 </h2>
 
@@ -628,7 +628,7 @@ const Checkout = () => {
                     return (
                       <label
                         key={method.id}
-                        className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
                           paymentMethod === method.id
                             ? 'border-primary-500 bg-primary-50'
                             : 'border-gray-200 hover:border-primary-300'
@@ -642,7 +642,7 @@ const Checkout = () => {
                           onChange={(e) => setPaymentMethod(e.target.value)}
                           className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                         />
-                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                        <Icon className="w-6 h-6 text-gray-600" />
                         <div>
                           <p className="font-medium text-gray-800">{method.name}</p>
                           <p className="text-sm text-gray-500">{method.description}</p>
@@ -654,14 +654,14 @@ const Checkout = () => {
               </div>
 
               {/* Order Notes */}
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
                   Order Notes (Optional)
                 </h2>
                 <textarea
                   placeholder="Any special instructions for your order..."
                   rows={3}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
                   {...register('notes')}
                 />
               </div>
@@ -669,8 +669,8 @@ const Checkout = () => {
 
             {/* Order Summary */}
             <div>
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sticky top-20 sm:top-24">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-5 sm:mb-6">
+              <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
+                <h2 className="text-lg font-semibold text-gray-800 mb-6">
                   Order Summary
                 </h2>
 

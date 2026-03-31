@@ -273,10 +273,10 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="mb-5 sm:mb-8">
+        <nav className="mb-8">
           <ol className="flex items-center space-x-2 text-sm text-gray-500">
             <li><Link to="/" className="hover:text-primary-600">Home</Link></li>
             <li>/</li>
@@ -287,7 +287,7 @@ const ProductDetail = () => {
         </nav>
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="grid lg:grid-cols-2 gap-5 sm:gap-8 p-4 sm:p-6 lg:p-10">
+          <div className="grid lg:grid-cols-2 gap-8 p-6 lg:p-10">
             {/* Images */}
             <div>
               <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4">
@@ -338,7 +338,7 @@ const ProductDetail = () => {
               </p>
 
               {/* Name */}
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800 mb-3 sm:mb-4">
+              <h1 className="text-3xl font-display font-bold text-gray-800 mb-4">
                 {product.name}
               </h1>
 
@@ -365,12 +365,12 @@ const ProductDetail = () => {
               </div>
 
               {/* Price */}
-              <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-                <span className="text-2xl sm:text-3xl font-bold text-primary-600">
+              <div className="flex items-center gap-4 mb-6">
+                <span className="text-3xl font-bold text-primary-600">
                   {formatPrice(effectivePrice)}
                 </span>
                 {isOnSale && (
-                  <span className="text-lg sm:text-xl text-gray-400 line-through">
+                  <span className="text-xl text-gray-400 line-through">
                     {formatPrice(product.price)}
                   </span>
                 )}
@@ -554,7 +554,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6">
+              <div className="flex gap-4 mb-6">
                 <Button
                   variant="primary"
                   size="lg"
@@ -570,7 +570,7 @@ const ProductDetail = () => {
                   variant="outline"
                   size="lg"
                   onClick={() => toggleWishlist(product)}
-                  className={`sm:w-auto ${isInWishlist(product.id) ? 'text-primary-600 border-primary-500' : ''}`}
+                  className={isInWishlist(product.id) ? 'text-primary-600 border-primary-500' : ''}
                 >
                   <FaHeart className={isInWishlist(product.id) ? 'fill-current' : ''} />
                   {isInWishlist(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
@@ -583,7 +583,6 @@ const ProductDetail = () => {
                     aria-expanded={shareMenuOpen}
                     aria-haspopup="menu"
                     aria-label="Share product"
-                    className="sm:w-auto"
                   >
                     <FaShare />
                   </Button>

@@ -108,17 +108,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-100 to-cosmetic-champagne flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
+          <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary-600">
+              <h1 className="font-display text-3xl font-bold text-primary-600">
                 Ganda Hub
               </h1>
             </Link>
-            <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl font-semibold text-gray-800">
+            <h2 className="mt-4 text-2xl font-semibold text-gray-800">
               Welcome Back
             </h2>
             <p className="mt-2 text-gray-600">
@@ -127,7 +127,7 @@ const Login = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <Input
               label="Email Address"
               type="email"
@@ -188,7 +188,7 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="my-6 sm:my-8 flex items-center">
+          <div className="my-8 flex items-center">
             <div className="flex-grow border-t border-gray-200"></div>
             <span className="px-4 text-sm text-gray-500">or</span>
             <div className="flex-grow border-t border-gray-200"></div>
@@ -205,7 +205,7 @@ const Login = () => {
           </div>
 
           {/* Sign Up Link */}
-          <p className="mt-6 sm:mt-8 text-center text-sm sm:text-base text-gray-600">
+          <p className="mt-8 text-center text-gray-600">
             Don&apos;t have an account?{' '}
             <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
               Sign up

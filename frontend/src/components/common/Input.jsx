@@ -12,7 +12,7 @@ const Input = forwardRef(({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
           {label}
         </label>
       )}
@@ -26,7 +26,7 @@ const Input = forwardRef(({
           ref={ref}
           type={type}
           className={`
-            w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border transition-all duration-200 outline-none
+            w-full px-4 py-3 rounded-lg border transition-all duration-200 outline-none
             ${Icon ? 'pl-10' : ''}
             ${error
               ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200'

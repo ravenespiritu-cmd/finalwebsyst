@@ -205,8 +205,8 @@ const Products = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl font-display font-bold text-gray-800">
             {pageTitle}
           </h1>
           <p className="text-gray-600 mt-2">
@@ -215,8 +215,8 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col lg:flex-row gap-5 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar - Desktop */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
@@ -328,10 +328,10 @@ const Products = () => {
           {/* Products Grid */}
           <div className="flex-grow">
             {/* Toolbar */}
-            <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 mb-5 sm:mb-6 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
               <button
                 onClick={() => setShowFilters(true)}
-                className="lg:hidden flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="lg:hidden flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 <FaFilter />
                 Filters
@@ -356,7 +356,7 @@ const Products = () => {
               <Loading />
             ) : products.length > 0 ? (
               <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
                   {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

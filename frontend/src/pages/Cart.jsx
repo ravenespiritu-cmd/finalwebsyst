@@ -69,23 +69,23 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-5 sm:py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-800 mb-5 sm:mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-display font-bold text-gray-800 mb-8">Shopping Cart</h1>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {items.map((item) => (
-                <div key={item.id} className="p-4 sm:p-6 border-b border-gray-100 last:border-0">
-                  <div className="flex gap-3 sm:gap-4">
+                <div key={item.id} className="p-6 border-b border-gray-100 last:border-0">
+                  <div className="flex gap-4">
                     {/* Product Image */}
                     <Link to={`/products/${item.product?.slug}`} className="flex-shrink-0">
                       <img
                         src={toAbsoluteImageUrl(item.product?.thumbnail)}
                         alt={item.product?.name}
-                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
+                        className="w-24 h-24 object-cover rounded-lg"
                         onError={(e) => {
                           if (e.target.src !== PLACEHOLDER_PRODUCT && !e.target.dataset.failed) {
                             e.target.dataset.failed = '1';
@@ -116,7 +116,7 @@ const Cart = () => {
                       </p>
 
                       {/* Quantity Controls */}
-                      <div className="flex items-center justify-between mt-3 sm:mt-4">
+                      <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center border border-gray-300 rounded-lg">
                           <button
                             onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
@@ -145,7 +145,7 @@ const Cart = () => {
                     </div>
 
                     {/* Item Total */}
-                    <div className="text-right self-start">
+                    <div className="text-right">
                       <p className="font-semibold text-gray-800">
                         {formatPrice(item.total_price)}
                       </p>
@@ -169,7 +169,7 @@ const Cart = () => {
 
           {/* Order Summary */}
           <div className="mt-8 lg:mt-0">
-            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 sticky top-20 sm:top-24">
+            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
               <h2 className="text-lg font-semibold text-gray-800 mb-6">Order Summary</h2>
 
               {/* Coupon */}
@@ -197,7 +197,7 @@ const Cart = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder="Enter code"
-                      className="flex-grow px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
+                      className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary-500"
                     />
                     <Button
                       variant="outline"
